@@ -1,0 +1,91 @@
+%%
+% GENERATE PV PLOTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ close all; clc;
+ statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc';
+% Parameters            
+dx = 500; dy = dx; dz = 5;
+nx = 96; ny=96;
+ts = 3600;
+TtoB = 9.81.*2e-4;
+tslice = [1 480];
+slice={0, 0, 0, tslice};%100 120
+sliceEta={0,0,[1 1],tslice};%251 271
+
+%%
+Q = NaN(
+for i=1:1
+   slicetemp = {slice{1}, slice{2}, slice{3}, [tslice(1)+i-1 tslice(1)+i-1]};
+   [Q, JFz, JBz] = calcQBudget(diagfile, statefile, etanfile, [nx, ny], slicetemp);
+end
+
+%%
+% Integrate in Volume.
+disp('Try Volume Integral');
+
+area = nx.*dx.*ny.*dy;
+%Average Horizontally
+if ndims(squeeze(JFz))==4
+Jbah = squeeze(nansum(nansum(JBz(:,:,:,:))))*dx*dy./area;
+Jfah = squeeze(nansum(nansum(JFz(:,:,:,:))))*dx*dy./area;
+qah = squeeze(nansum(nansum(Q))).*dx.*dy./area;
+% qdirah = squeeze(nansum(nansum(Qdir))).*dx.*dy./area;
+
+else %2 Dimensional
+    Jbah = squeeze(nansum(JBz)).*dy./(ny.*dy);
+    Jfah = squeeze(nansum(JFz)).*dy./(ny.*dy);
+    qah = squeeze(nansum(Q)).*dy./(ny.*dy);
+%     qdirah  = squeeze(nansum(Qdir)).*dy./(ny*dy);
+end
+% Jfahy = squeeze(nansum(JFy(:, end-1, :,:)-JFy(:,2,:,:))).*dx./area;
+% Jfay = nansum(Jfahy).*dz;
+% Jfay = cumtrapz(Jfay).*ts;
+
+%Integrating the vertical difference in time.
+deltaJb = Jbah(1,:) - Jbah(end,:);
+Jbza = cumtrapz(deltaJb).*ts;
+deltaJf = Jfah(1,:) - Jfah(end,:);
+Jfza = cumtrapz(deltaJf).*ts;
+
+% Jfza = cumtrapz(Jfah(2,:)).*ts;
+
+%Integrate vertically
+qa = nansum(qah)*dz;
+qt = gradient(qa, ts);
+
+qa = qa - qa(1); %Define delta quantity
+
+
+% qa = -nansum(qah)*dz; %integrate in z
+% qa = cumtrapz(qa)*ts; %integrate in time.
+
+% qdira = -nansum(qdirah)*dz; %integrate in z
+% qdira = cumtrapz(qdira)*ts; %integrate in time.
+%%
+% Make Time Series Figure of DeltaQ and Fluxes
+figure
+plot(qa, 'LineWidth', 2)
+hold on
+plot(-Jbza, 'LineWidth', 2);
+plot(-Jfza, 'LineWidth', 2);
+
+plot(-(Jbza+Jfza), 'LineWidth', 2, 'LineStyle', '--');
+% plot(qdira);
+% plot(-Jfay);
+hold off
+legend('Q', 'J_B^z', 'J_F^z', '-SUM');
+xlabel('Num time steps (Hourly)');
+ylabel('\Delta Q');
+grid on
+
+%%
+% In terms of dQ/dt
+figure
+plot(qt, 'LineWidth', 2);
+hold on
+plot(-deltaJb, 'LineWidth', 2);
+plot(-deltaJf, 'LineWidth', 2);
+plot(-(deltaJb+deltaJf), 'LineWidth',2 , 'LineStyle', '--');
+hold off
+grid on
+legend('dQ/dt',  'J_B^z', 'J_F^z', '-SUM');
