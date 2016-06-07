@@ -1,4 +1,4 @@
-function [Q, JFz, JBz, JFy, JADVy] = calcQBudget(diagfile, statefile, etanfile, sizes, slice )
+function [Q, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz] = calcQBudget(diagfile, statefile, etanfile, sizes, slice )
 nx = sizes(1); ny = sizes(2);
 sliceEta = {slice{1}, slice{2}, [1 1], slice{4}};
 TtoB = 9.81.*2e-4;
@@ -55,12 +55,13 @@ Q = OMEGAX.*bx + OMEGAY.*by + OMEGAZ.*bz; %A more direct definition of Q.
 
 % Calculate J Vectors
 % disp('Calculate J Vectors');
-% U = GetVar(statefile, diagfile, {'UVEL', '(1)'}, slice);
+U = GetVar(statefile, diagfile, {'UVEL', '(1)'}, slice);
 V = GetVar(statefile, diagfile, {'VVEL', '(1)'}, slice);
-% W = GetVar(statefile, diagfile, {'WVEL', '(1)'}, slice);
+W = GetVar(statefile, diagfile, {'WVEL', '(1)'}, slice);
 % 
 % %ADVECTIVE TERMS
-% JADVx = U.*Q; ; JADVz = W.*Q;
+JADVx = U.*Q; 
+JADVz = W.*Q;
 JADVy = V.*Q;
 %FRICTION TERMS
 Fx = GetVar(statefile, diagfile, {'TOTUTEND','Um_Advec', ' (1)/86400 - (2)'},slice);
