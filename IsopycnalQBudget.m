@@ -3,11 +3,11 @@
   clc;
  statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc';
 % Parameters            
-dx = 1000; dy = dx; dz = 5;
-nx = 48; ny=nx; nz=100;
-ts = 14400;
+dx = 1000; dy = dx; dz = 2.5;
+nx = 96; ny=nx; nz=200;
+ts = 1800;
 TtoB = 9.81.*2e-4;
-tslice = [1 119];
+tslice = [4000 7000];
 slice={0, 0, 0, tslice};%100 120
 sliceEta={0,0,[1 1],tslice};%251 271
 
