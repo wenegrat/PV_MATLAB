@@ -1,4 +1,4 @@
-function [Q, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz] = calcQBudget(diagfile, statefile, etanfile, sizes, slice )
+function [Q,Qdir, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz] = calcQBudget(diagfile, statefile, etanfile, sizes, slice, dx, dy )
 nx = sizes(1); ny = sizes(2);
 sliceEta = {slice{1}, slice{2}, [1 1], slice{4}};
 TtoB = 9.81.*2e-4;
@@ -42,16 +42,28 @@ bz = GetVar(statefile, diagfile, {'b', 'Dz(1)'}, slice);
 %ignore w derivatives for consistency with hydrostatic approx.
 OMEGAX = GetVar(statefile, diagfile, {'WVEL', 'VVEL', 'Dy(1) - Dz(2)'}, slice);
 OMEGAY = GetVar(statefile, diagfile, {'UVEL', 'WVEL', 'Dz(1) - Dx(2)'}, slice);
-
-% OMEGAX = GetVar(statefile, diagfile, { 'VVEL', ' - Dz(1)'}, slice);
-% OMEGAY = GetVar(statefile, diagfile, {'UVEL', 'Dz(1) '}, slice);
 OMEGAZ = GetVar(statefile, diagfile, {'f_1e-4', 'VVEL', 'UVEL', '(1) + Dx(2) - Dy(3)'}, slice);
-% if ndims(squeeze(OMEGAZ))==3; 
-%     OMEGAZ = GetVar(statefile, diagfile, {'f_1e-4', 'UVEL', '(1)  - Dy(2)'}, slice);
-%     OMEGAY = Drv(metric, GetVar(statefile, diagfile, {'UVEL', '(1)'}, slice),'z');
-% end
-%%
 Q = OMEGAX.*bx + OMEGAY.*by + OMEGAZ.*bz; %A more direct definition of Q.
+
+%%
+%Calculate Q from the momentum budget:
+LHSV = GetVar(statefile, diagfile, {'TOTVTEND', 'Vm_Advec', '(1)/86400-(2)'}, slice);
+LHSV = LHSV-dpdy;
+LHSU = GetVar(statefile, diagfile, {'TOTUTEND', 'Um_Advec', '(1)/86400-(2)'}, slice);
+LHSU = LHSU-dpdx;
+QXz = Drv(metric, LHSU, 'z',1,1);
+QXy = Drv(dy, LHSU, 'y', 1,1);
+QVz = Drv(metric, LHSV, 'z', 1, 1);
+QVx = Drv(dx, LHSV, 'x',1,1);
+Qmom = -bx.*QVz + by.*QXz + bz.*(QVx - QXy);
+
+LHSb = TtoB.*GetVar(statefile, diagfile, {'TOTTTEND', 'UDIAG1', '(1)/86400-(2)'}, slice);
+LHBx = Drv(dx, LHSb, 'x', 1, 1);
+LHBy = Drv(dy, LHSb, 'y', 1, 1);
+LHBz = Drv(metric, LHSb, 'z', 1, 1);
+Qb = OMEGAX.*LHBx + OMEGAY.*LHBy + OMEGAZ.*LHBz;
+Qdir = Qmom + Qb;
+
 
 % Calculate J Vectors
 % disp('Calculate J Vectors');
@@ -60,9 +72,9 @@ V = GetVar(statefile, diagfile, {'VVEL', '(1)'}, slice);
 W = GetVar(statefile, diagfile, {'WVEL', '(1)'}, slice);
 % 
 % %ADVECTIVE TERMS
-JADVx = U.*Q; 
-JADVz = W.*Q;
-JADVy = V.*Q;
+JADVx = U.*Qdir; 
+JADVz = W.*Qdir;
+JADVy = V.*Qdir;
 %FRICTION TERMS
 Fx = GetVar(statefile, diagfile, {'TOTUTEND','Um_Advec', ' (1)/86400 - (2)'},slice);
 Fx = Fx - dpdx;
@@ -72,7 +84,7 @@ Fy = Fy - dpdy;
 JFx = -bz.*Fy; JFy = bz.*Fx; JFz = bx.*Fy - by.*Fx;
 
 %DIABATIC TERMS
-D = TtoB*GetVar(statefile, diagfile, {'TOTTTEND', 'UDIAG1', '(1)/86400 - (2)'}, slice);
+D = LHSb; %TtoB*GetVar(statefile, diagfile, {'TOTTTEND', 'UDIAG1', '(1)/86400 - (2)'}, slice);
 JBx = -OMEGAX.*D; JBy = -OMEGAY.*D; JBz = -OMEGAZ.*D;
 %%
 
