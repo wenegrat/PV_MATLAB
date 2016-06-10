@@ -49,8 +49,8 @@ end
 
 %%
 % Generate Mask
-isoT = [16.5 16.55];
-% isoT = [0 20];
+isoT = [16.55 16.6];
+isoT = [16.25 16.55];
 for i=1:(tslice(end)-tslice(1)+1);
 %    slicetemp = {slice{1}, slice{2}, slice{3}, [tslice(1)+i-1 tslice(1)+i-1]};
    mask(:,:,:,i) = (THETA(:,:,:,i)>isoT(1)) & (THETA(:,:,:,i)<isoT(2));
@@ -60,9 +60,6 @@ end
 % Integrate in Volume.
 disp('Integrate Over Volume');
 
-%Average Horizontally
-ylims = 2:(ny-2);
-zlims = 2:nz-1;
 
 
 % JAxi = JAx.*mask; JAyi = JAy.*mask; JAzi = JAz.*mask;
@@ -74,24 +71,25 @@ Diai = DiaDiv.*mask;
 
 vol = dx.*dy.*dz.*squeeze(sum(sum(sum(mask))));
 gridvol = dx.*dy.*dz;
-Fric = squeeze(nansum(nansum(nansum(Frici)))).*gridvol./vol;
-Frict = cumtrapz(Fric).*ts;
-Adv = squeeze(nansum(nansum(nansum(Advi)))).*gridvol./vol;
-Advt = cumtrapz(Adv).*ts;
-Dia = squeeze(nansum(nansum(nansum(Diai)))).*gridvol./vol;
-Diat = cumtrapz(Dia).*ts;
+Fric = squeeze(nansum(nansum(nansum(Frici)))).*gridvol;
+Frict = cumtrapz(Fric).*ts./vol;
+Adv = squeeze(nansum(nansum(nansum(Advi)))).*gridvol;
+Advt = cumtrapz(Adv).*ts./vol;
+Dia = squeeze(nansum(nansum(nansum(Diai)))).*gridvol;
+Diat = cumtrapz(Dia).*ts./vol;
 
-zl  = 1;
-yl = 2;
+zl  =1;
+yl = 3;
+withsides = 1;
 Frics = squeeze(nansum(nansum(JFz(:,:,zl,:).*mask(:,:,zl,:))) - nansum(nansum(JFz(:,:,end-zl+1,:).*mask(:,:,end-zl+1,:)))).*dx.*dy;
-Frics = Frics+squeeze(nansum(nansum(JFz(:,end-yl,:,:).*mask(:,end-yl,:,:))) - nansum(nansum(JFz(:,yl,:,:).*mask(:,yl,:,:)))).*dz.*dx;
-Frics = Frics./vol;
-Fricst = cumtrapz(Frics).*ts;
+if withsides; Frics = Frics+squeeze(nansum(nansum(JFy(:,end-yl,:,:).*mask(:,end-yl,:,:))) - nansum(nansum(JFy(:,yl,:,:).*mask(:,yl,:,:)))).*dz.*dx; end;
+% Frics = Frics./vol;
+Fricst = cumtrapz(Frics).*ts./vol;
 % Dias = squeeze(nansum(nansum(JBz(:,:,zl,:).*mask(:,:,zl,:))));
 Dias = squeeze(nansum(nansum(JBz(:,:,zl,:).*mask(:,:,zl,:))) - nansum(nansum(JBz(:,:,end-zl+1,:).*mask(:,:,end-zl+1,:)))).*dx.*dy;
-Dias = Dias+squeeze(nansum(nansum(JBz(:,end-yl,:,:).*mask(:,end-yl,:,:))) - nansum(nansum(JBz(:,yl,:,:).*mask(:,yl,:,:)))).*dz.*dx;
-Dias = Dias./vol;
-Diast = cumtrapz(Dias).*ts;
+if withsides; Dias = Dias+squeeze(nansum(nansum(JBy(:,end-yl,:,:).*mask(:,end-yl,:,:))) - nansum(nansum(JBy(:,yl,:,:).*mask(:,yl,:,:)))).*dz.*dx; end;
+% Dias = Dias./vol;
+Diast = cumtrapz(Dias).*ts./vol;
 
 Qi = Qdir.*mask;
 Qta = squeeze(nansum(nansum(nansum(Qi)))).*gridvol./vol; %This is volume integral of dQ/dt
@@ -100,11 +98,11 @@ Qda = Qda - Qda(1);
 
 Qi = Q.*mask;
 % Qt = gradient
-Qa = squeeze(nansum(nansum(nansum(Qi)))).*gridvol./vol; %Note that doing it this way is incorrect, as it doesn't account for time variations in Vol...
+Qa = squeeze(nansum(nansum(nansum(Qi)))).*gridvol; %Note that doing it this way is incorrect, as it doesn't account for time variations in Vol...
 
 % Qda = cumtrapz(Qta).*ts; %Need to check if this is correct.
 Qt = gradient(Qa, ts);
-Qa = Qa - Qa(1);% 
+Qa = (Qa - Qa(1))./vol;% 
 % Jbah = squeeze(nansum(nansum(JBz(:,ylims,:,:))))*dx*dy./area;
 % Jfah = squeeze(nansum(nansum(JFz(:,ylims,:,:))))*dx*dy./area;
 % qah = squeeze(nansum(nansum(Q(:,ylims,:,:)))).*dx.*dy./area;
@@ -149,22 +147,41 @@ Qa = Qa - Qa(1);%
 figure
 plot(Qa, 'LineWidth', 2)
 hold on
+
+plot(-Fricst); 
+plot(-Diast);
+plot(-(Fricst+Diast));
+% plot(Qda+Advt);
+hold off
+legend('Q', 'Fric', 'Dia', 'Sum');
+xlabel('Num time steps (Hourly)');
+ylabel('\Delta Q');
+grid on
+
+%%
+% Make Time Series Figure of DeltaQ and Fluxes
+figure
+plot(Qa, 'LineWidth', 2)
+hold on
 plot(-Frict, 'LineWidth', 2);
 
 plot(-Advt, 'LineWidth', 2);
 plot(-Diat, 'LineWidth', 2);
 
-plot(-(Frict+Diat), 'LineWidth', 3, 'LineStyle', '--');
+plot(-(Frict+Diat+Advt), 'LineWidth', 3, 'LineStyle', '--');
 % plot(qdira);
 plot(Qda, 'LineWidth', 2)
 plot(-Fricst); 
 plot(-Diast);
 plot(-(Fricst+Diast));
+% plot(Qda+Advt);
 hold off
-legend('Q', 'Fric','Adv', 'Dia', 'Sum', 'Qdir', 'Fric(0)', 'Dia(0)', 'Sum(0)');
+legend('Q', 'Fric','Adv', 'Dia', 'Sum (no adv)', 'Qdir', 'Fric(0)', 'Dia(0)', 'Sum(0)');
 xlabel('Num time steps (Hourly)');
 ylabel('\Delta Q');
 grid on
+
+
 
 %%
 figure
@@ -185,6 +202,7 @@ ylabel('\Delta Q');
 grid on
 
 
-% %%
-% plot(Qa);
-% plot(
+%%
+scatter(Qa- Qda, Advt)
+% scatter(Advt, vol)
+grid on

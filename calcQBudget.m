@@ -48,9 +48,11 @@ Q = OMEGAX.*bx + OMEGAY.*by + OMEGAZ.*bz; %A more direct definition of Q.
 %%
 %Calculate Q from the momentum budget:
 LHSV = GetVar(statefile, diagfile, {'TOTVTEND', 'Vm_Advec', '(1)/86400-(2)'}, slice);
-LHSV = LHSV-dpdy;
+%LHSV = GetVar(statefile, diagfile, {'TOTVTEND', '(1)/86400'}, slice);
+ LHSV = LHSV-dpdy;
 LHSU = GetVar(statefile, diagfile, {'TOTUTEND', 'Um_Advec', '(1)/86400-(2)'}, slice);
-LHSU = LHSU-dpdx;
+%LHSU = GetVar(statefile, diagfile, {'TOTUTEND', '(1)/86400'}, slice);
+ LHSU = LHSU-dpdx;
 QXz = Drv(metric, LHSU, 'z',1,1);
 QXy = Drv(dy, LHSU, 'y', 1,1);
 QVz = Drv(metric, LHSV, 'z', 1, 1);
@@ -58,6 +60,7 @@ QVx = Drv(dx, LHSV, 'x',1,1);
 Qmom = -bx.*QVz + by.*QXz + bz.*(QVx - QXy);
 
 LHSb = TtoB.*GetVar(statefile, diagfile, {'TOTTTEND', 'UDIAG1', '(1)/86400-(2)'}, slice);
+% LHSb = TtoB.*GetVar(statefile, diagfile, {'TOTTTEND', '(1)/86400'}, slice);
 LHBx = Drv(dx, LHSb, 'x', 1, 1);
 LHBy = Drv(dy, LHSb, 'y', 1, 1);
 LHBz = Drv(metric, LHSb, 'z', 1, 1);
@@ -72,9 +75,9 @@ V = GetVar(statefile, diagfile, {'VVEL', '(1)'}, slice);
 W = GetVar(statefile, diagfile, {'WVEL', '(1)'}, slice);
 % 
 % %ADVECTIVE TERMS
-JADVx = U.*Qdir; 
-JADVz = W.*Qdir;
-JADVy = V.*Qdir;
+JADVx = U.*Q; 
+JADVz = W.*Q;
+JADVy = V.*Q;
 %FRICTION TERMS
 Fx = GetVar(statefile, diagfile, {'TOTUTEND','Um_Advec', ' (1)/86400 - (2)'},slice);
 Fx = Fx - dpdx;
@@ -84,7 +87,7 @@ Fy = Fy - dpdy;
 JFx = -bz.*Fy; JFy = bz.*Fx; JFz = bx.*Fy - by.*Fx;
 
 %DIABATIC TERMS
-D = LHSb; %TtoB*GetVar(statefile, diagfile, {'TOTTTEND', 'UDIAG1', '(1)/86400 - (2)'}, slice);
+D =  TtoB*GetVar(statefile, diagfile, {'TOTTTEND', 'UDIAG1', '(1)/86400 - (2)'}, slice);
 JBx = -OMEGAX.*D; JBy = -OMEGAY.*D; JBz = -OMEGAZ.*D;
 %%
 
