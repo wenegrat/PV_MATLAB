@@ -4,10 +4,10 @@
  statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc';
 % Parameters            
 dx = 1000; dy = dx; dz = 2.5;
-nx = 96; ny=nx; nz=200;
+nx = 48; ny=96; nz=200;
 ts = 1800;
 TtoB = 9.81.*2e-4;
-tslice = [1 1339];
+tslice = [300 1300];
 slice={0, 0, 0, tslice};%100 120
 sliceEta={0,0,[1 1],tslice};%251 271
 
@@ -49,12 +49,23 @@ end
 
 %%
 % Generate Mask
-isoT = [16.55 16.6];
+mask = zeros(nx, ny, nz, tslice(end)-tslice(1)+1);
+isoT = [16.55 16.8];
 isoT = [16.25 16.55];
+isoT = [0 30];
 for i=1:(tslice(end)-tslice(1)+1);
 %    slicetemp = {slice{1}, slice{2}, slice{3}, [tslice(1)+i-1 tslice(1)+i-1]};
    mask(:,:,:,i) = (THETA(:,:,:,i)>isoT(1)) & (THETA(:,:,:,i)<isoT(2));
-end
+end 
+
+%%
+% Mask by depth
+%zl = [1 20];
+%for i=1:(tslice(end)-tslice(1)+1)
+%   mask(:,:,:,i) = ones(size(THETA(:,:,:,i)));
+%   mask(:,:, 1:zl(1),i) = 0;
+%   mask(:,:, zl(2):end, i) = 0;
+%end
 %%
 % Calculate divergences
 % Integrate in Volume.
@@ -70,6 +81,7 @@ Advi = AdvDiv.*mask;
 Diai = DiaDiv.*mask;
 
 vol = dx.*dy.*dz.*squeeze(sum(sum(sum(mask))));
+% vol = 1;
 gridvol = dx.*dy.*dz;
 Fric = squeeze(nansum(nansum(nansum(Frici)))).*gridvol;
 Frict = cumtrapz(Fric).*ts./vol;
@@ -78,28 +90,45 @@ Advt = cumtrapz(Adv).*ts./vol;
 Dia = squeeze(nansum(nansum(nansum(Diai)))).*gridvol;
 Diat = cumtrapz(Dia).*ts./vol;
 
-zl  =1;
-yl = 3;
-withsides = 1;
-Frics = squeeze(nansum(nansum(JFz(:,:,zl,:).*mask(:,:,zl,:))) - nansum(nansum(JFz(:,:,end-zl+1,:).*mask(:,:,end-zl+1,:)))).*dx.*dy;
+zl =1;
+yl = 2;
+withsides = false;
+Fi = JFz(:,:,zl,:).*mask(:,:,zl,:);
+
+Fi(~isfinite(Fi)) = 0;
+% Fi = cumsum(Fi, 4).*ts;
+Frics = squeeze(nansum(nansum(JFz(:,yl:end-yl,zl,:).*mask(:,yl:end-yl,zl,:))) - nansum(nansum(JFz(:,yl:end-yl,end-zl+1,:).*mask(:,yl:end-yl,end-zl+1,:)))).*dx.*dy;
+%Frics = squeeze(nansum(nansum(JFz(:,yl:end-yl,zl,:).*mask(:,yl:end-yl,zl,:))) ).*dx.*dy;
+
+% Frics = squeeze(trapz(trapz(Fi))).*dx.*dy;
 if withsides; Frics = Frics+squeeze(nansum(nansum(JFy(:,end-yl,:,:).*mask(:,end-yl,:,:))) - nansum(nansum(JFy(:,yl,:,:).*mask(:,yl,:,:)))).*dz.*dx; end;
 % Frics = Frics./vol;
+% Fricst = Frics./vol;
 Fricst = cumtrapz(Frics).*ts./vol;
-% Dias = squeeze(nansum(nansum(JBz(:,:,zl,:).*mask(:,:,zl,:))));
-Dias = squeeze(nansum(nansum(JBz(:,:,zl,:).*mask(:,:,zl,:))) - nansum(nansum(JBz(:,:,end-zl+1,:).*mask(:,:,end-zl+1,:)))).*dx.*dy;
+Fricst = Fricst - Fricst(1);
+Di = JBz(:,:,zl,:).*mask(:,:,zl,:);
+Di(~isfinite(Di))=0;
+% Dias = squeeze(trapz(trapz(Di))).*dx.*dy;
+Dias = squeeze(nansum(nansum(JBz(:,yl:end-yl,zl,:).*mask(:,yl:end-yl,zl,:))) - nansum(nansum(JBz(:,yl:end-yl,end-zl+1,:).*mask(:,yl:end-yl,end-zl+1,:)))).*dx.*dy;
+%Dias = squeeze(nansum(nansum(JBz(:,yl:end-yl,zl,:).*mask(:,yl:end-yl,zl,:)))).*dx.*dy;
+
 if withsides; Dias = Dias+squeeze(nansum(nansum(JBy(:,end-yl,:,:).*mask(:,end-yl,:,:))) - nansum(nansum(JBy(:,yl,:,:).*mask(:,yl,:,:)))).*dz.*dx; end;
 % Dias = Dias./vol;
 Diast = cumtrapz(Dias).*ts./vol;
+Diast = Diast - Diast(1);
 
 Qi = Qdir.*mask;
-Qta = squeeze(nansum(nansum(nansum(Qi)))).*gridvol./vol; %This is volume integral of dQ/dt
-Qda = cumtrapz(Qta).*ts; %Need to check if this is correct.
+Qta = squeeze(nansum(nansum(nansum(Qi)))).*gridvol; %This is volume integral of dQ/dt
+Qda = cumtrapz(Qta).*ts./vol; %Time Integral of Vol Integral of dQ/dt.
 Qda = Qda - Qda(1);
 
 Qi = Q.*mask;
-% Qt = gradient
-Qa = squeeze(nansum(nansum(nansum(Qi)))).*gridvol; %Note that doing it this way is incorrect, as it doesn't account for time variations in Vol...
-
+% Qi(:,:,1,:) = Qi(:,:,2,:);
+% Qi(~isfinite(Qi)) = 0;
+% Qi(Qi>5e-9) = 0; % XXX-HACK TEST
+% Qt = gradient`
+% Qa = squeeze(trapz(trapz(trapz(Qi)))).*gridvol; %Note that doing it this way is incorrect, as it doesn't account for time variations in Vol...
+Qa = squeeze(nansum(nansum(nansum(Qi)))).*gridvol;
 % Qda = cumtrapz(Qta).*ts; %Need to check if this is correct.
 Qt = gradient(Qa, ts);
 Qa = (Qa - Qa(1))./vol;% 
@@ -147,7 +176,6 @@ Qa = (Qa - Qa(1))./vol;%
 figure
 plot(Qa, 'LineWidth', 2)
 hold on
-
 plot(-Fricst); 
 plot(-Diast);
 plot(-(Fricst+Diast));
@@ -166,17 +194,19 @@ hold on
 plot(-Frict, 'LineWidth', 2);
 
 plot(-Advt, 'LineWidth', 2);
+% plot(-qdivt, 'LineWidth', 2);
+
 plot(-Diat, 'LineWidth', 2);
 
-plot(-(Frict+Diat+Advt), 'LineWidth', 3, 'LineStyle', '--');
+plot(-(Frict+Diat), 'LineWidth', 3, 'LineStyle', '--');
 % plot(qdira);
 plot(Qda, 'LineWidth', 2)
 plot(-Fricst); 
 plot(-Diast);
 plot(-(Fricst+Diast));
-% plot(Qda+Advt);
+plot(-(Qa-Qda));
 hold off
-legend('Q', 'Fric','Adv', 'Dia', 'Sum (no adv)', 'Qdir', 'Fric(0)', 'Dia(0)', 'Sum(0)');
+legend('Q', 'Fric','Adv', 'Dia', 'Sum (w adv)', 'Qdir', 'Fric(0)', 'Dia(0)', 'Sum(0)');
 xlabel('Num time steps (Hourly)');
 ylabel('\Delta Q');
 grid on
@@ -185,24 +215,34 @@ grid on
 
 %%
 figure
-plot(Qt, 'LineWidth', 2)
+plot(smooth(Qt, 1), 'LineWidth', 2)
 hold on
-plot(-Fric, 'LineWidth', 2);
-plot(-Adv, 'LineWidth', 2);
-plot(-Dia, 'LineWidth', 2);
+plot(-Frics, 'LineWidth', 2);
+% plot(-Adv, 'LineWidth', 2);
+plot(-Dias, 'LineWidth', 2);
 
-plot(-(Fric+Adv+Dia), 'LineWidth', 2, 'LineStyle', '--');
+
+plot(-(Frics+Dias), 'LineWidth', 2, 'LineStyle', '--');
 % plot(qdira);
 plot(Qta, 'LineWidth', 2)
 
 hold off
-legend('Q', 'Fric','Adv', 'Dia', 'Sum');
+legend('Q', 'Fric', 'Dia', 'Sum', 'Qdir');
 xlabel('Num time steps (Hourly)');
 ylabel('\Delta Q');
 grid on
 
 
 %%
-scatter(Qa- Qda, Advt)
-% scatter(Advt, vol)
+
+scatter(Qa, -Fricst-Diast)
+% hold on
+% scatter(Qa+(Fricst+Diast), (vdivat).*gridvol./vol)
+% hold off
+grid on
+
+%%
+plot(Qta);
+hold on
+plot(Qt./vol); hold off
 grid on

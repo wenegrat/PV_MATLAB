@@ -7,8 +7,8 @@ dx = 1000; dy = dx; dz = 5;
 divis = '1e6';
 ts = 3600;
 TtoB = 9.81.*2e-4;
-indj = 1; indk = 20; d = 20;
-tslice = [400 480];
+indj = 20; indk = 20; d = 20;
+tslice = [200 350];
 slice={0, 0, 0, tslice};%100 120
 sliceEta={0,0,[1 1],tslice};%251 271
 
@@ -27,7 +27,7 @@ if ndims(dEtadx)==2
 end
 dpdx = permute(repmat((dEtadx), [1, 1, 1, zL]), [1 2 4 3]) + dpdx;
 % RHSDISSU =  GetVar(statefile,diagfile, {'Um_Diss', 'VISrI_Um','VISCx_Um', 'VISCy_Um','(1)+Dz(2)/2.5e5+Dx(3)/1250 +Dy(4)/1250'},slice);
-RHSDISSU =  GetVar(statefile,diagfile, {'Um_Diss', 'VISrI_Um',['(1)+Dz(2)/',divis]},slice);
+RHSDISSU =  GetVar(statefile,diagfile, {'Um_Diss', 'VISrI_Um',['(1)-Dz(2)/',divis]},slice);
 
 RHSADVECU = GetVar(statefile, diagfile, {'Um_Advec', '(1)'}, slice);
 RHSU = RHSDISSU + RHSADVECU + dpdx;
@@ -43,7 +43,7 @@ if ndims(dEtady)==2
     dEtady(1,:,:) = temp;
 end
 dpdy = permute(repmat((dEtady), [1, 1, 1, zL]), [1 2 4 3]) + dpdy;
-RHSDISSV =  GetVar(statefile,diagfile, {'Vm_Diss', 'VISrI_Vm',['(1)+Dz(2)/',divis]},slice);
+RHSDISSV =  GetVar(statefile,diagfile, {'Vm_Diss', 'VISrI_Vm',['(1)-Dz(2)/',divis]},slice);
 RHSADVECV = GetVar(statefile, diagfile, {'Vm_Advec', '(1)'}, slice);
 RHSV = RHSDISSV + RHSADVECV + dpdy;
 
@@ -51,7 +51,7 @@ RHSV = RHSDISSV + RHSADVECV + dpdy;
 ztmp = ncread(statefile, 'Z');
 metric = permute(repmat(ztmp, [1, xL, yL, tL]), [2 3 1 4]);
 %%
-d=1;
+d=4;
 figure 
 plot(squeeze(TOTUTEND(indj, indk, d,:)), 'LineWidth', 2);
 hold on

@@ -40,27 +40,38 @@ bz = GetVar(statefile, diagfile, {'b', 'Dz(1)'}, slice);
 % disp('Calculate Abs Vorticity Terms');
 
 %ignore w derivatives for consistency with hydrostatic approx.
-OMEGAX = GetVar(statefile, diagfile, {'WVEL', 'VVEL', 'Dy(1) - Dz(2)'}, slice);
-OMEGAY = GetVar(statefile, diagfile, {'UVEL', 'WVEL', 'Dz(1) - Dx(2)'}, slice);
+%OMEGAX = GetVar(statefile, diagfile, {'WVEL', 'VVEL', 'Dy(1) - Dz(2)'}, slice);
+OMEGAX = GetVar(statefile, diagfile, {'VVEL', ' - Dz(1)'}, slice);
+
+%OMEGAY = GetVar(statefile, diagfile, {'UVEL', 'WVEL', 'Dz(1) - Dx(2)'}, slice);
+OMEGAY = GetVar(statefile, diagfile, {'UVEL', 'Dz(1)'}, slice);
+
 OMEGAZ = GetVar(statefile, diagfile, {'f_1e-4', 'VVEL', 'UVEL', '(1) + Dx(2) - Dy(3)'}, slice);
 Q = OMEGAX.*bx + OMEGAY.*by + OMEGAZ.*bz; %A more direct definition of Q.
-
+% Q = OMEGAZ.*bz;
 %%
 %Calculate Q from the momentum budget:
-LHSV = GetVar(statefile, diagfile, {'TOTVTEND', 'Vm_Advec', '(1)/86400-(2)'}, slice);
-%LHSV = GetVar(statefile, diagfile, {'TOTVTEND', '(1)/86400'}, slice);
- LHSV = LHSV-dpdy;
-LHSU = GetVar(statefile, diagfile, {'TOTUTEND', 'Um_Advec', '(1)/86400-(2)'}, slice);
-%LHSU = GetVar(statefile, diagfile, {'TOTUTEND', '(1)/86400'}, slice);
- LHSU = LHSU-dpdx;
+%LHSV = GetVar(statefile, diagfile, {'TOTVTEND', 'Vm_Advec', '(1)/86400-(2)'}, slice);
+LHSV = GetVar(statefile, diagfile, {'TOTVTEND', '(1)/86400'}, slice);
+%LHSV = GetVar(statefile, diagfile, {'Vm_Advec', '-(1)'}, slice);
+% LHSV = LHSV-dpdy;
+%  LHSV = -dpdy;    
+% LHSU = GetVar(statefile, diagfile, {'TOTUTEND', 'Um_Advec', '(1)/86400-(2)'}, slice);
+LHSU = GetVar(statefile, diagfile, {'TOTUTEND', '(1)/86400'}, slice);
+%LHSU = GetVar(statefile, diagfile, {'Um_Advec', '-(1)'}, slice);
+
+% LHSU = LHSU-dpdx;
+%  LHSU = -dpdx;
 QXz = Drv(metric, LHSU, 'z',1,1);
 QXy = Drv(dy, LHSU, 'y', 1,1);
 QVz = Drv(metric, LHSV, 'z', 1, 1);
 QVx = Drv(dx, LHSV, 'x',1,1);
 Qmom = -bx.*QVz + by.*QXz + bz.*(QVx - QXy);
 
-LHSb = TtoB.*GetVar(statefile, diagfile, {'TOTTTEND', 'UDIAG1', '(1)/86400-(2)'}, slice);
-% LHSb = TtoB.*GetVar(statefile, diagfile, {'TOTTTEND', '(1)/86400'}, slice);
+%LHSb = TtoB.*GetVar(statefile, diagfile, {'TOTTTEND', 'UDIAG1', '(1)/86400-(2)'}, slice);
+LHSb = TtoB.*GetVar(statefile, diagfile, {'TOTTTEND', '(1)/86400'}, slice);
+%LHSb = TtoB.*GetVar(statefile, diagfile, {'UDIAG1', '-(1)'}, slice);
+
 LHBx = Drv(dx, LHSb, 'x', 1, 1);
 LHBy = Drv(dy, LHSb, 'y', 1, 1);
 LHBz = Drv(metric, LHSb, 'z', 1, 1);
