@@ -3,17 +3,17 @@
   clc; clear all; close all;
  statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc';
 % Parameters            
-% dx = 500; dy = dx; dz = 3;
-% nx = 96; ny=192; nz=200;
-% ts = 3600;
-
-dx = 1000; dy = dx; dz = 2.5;
-nx = 48; ny=96; nz=200;
+dx = 500; dy = dx; dz = 3;
+nx = 96; ny=192; nz=200;
 ts = 3600;
+
+% dx = 1000; dy = dx; dz = 2.5;
+% nx = 48; ny=96; nz=200;
+% ts = 3600;
 
 TtoB = 9.81.*2e-4;
 tslice = [10 200];
-tslice = [80 119];
+tslice = [10 69];
 slice={0, 0, 0, tslice};%100 120
 sliceEta={0,0,[1 1],tslice};%251 271
 
@@ -67,13 +67,15 @@ mask = zeros(nx, ny, nz, tslice(end)-tslice(1)+1);
 isoT = [16.55 16.9];
 % isoT = [16.5 16.95];
  isoT = [3 30];
+% isoT = [16.9 30];
+% isoT = [3 16.55];
 [nx, ny, nz, nt] = size(THETA);
 for i=1:nt;
 %    slicetemp = {slice{1}, slice{2}, slice{3}, [tslice(1)+i-1 tslice(1)+i-1]};
    mask(:,:,:,i) = (THETA(:,:,:,i)>isoT(1)) & (THETA(:,:,:,i)<isoT(2));
 end 
 
-mask(:,end-3:end,:,:) = 0; %wall effects that might be in Q
+mask(:,end-2:end,:,:) = 0; %wall effects that might be in Q
 %%
 tind = floor((tslice(2)-tslice(1))/2);
 
@@ -111,7 +113,8 @@ Diai = DiaDiv;%.*mask;
 Diai(~isfinite(Diai))=0;
 
 vol = dx.*dy.*dz.*squeeze(sum(sum(sum(mask))));
-% vol =1;
+vol =1;
+
 gridvol = dx.*dy.*dz;
 
 % Frici = cumtrapz(t, Frici, 4);
@@ -135,8 +138,8 @@ Dia = cumtrapz(t,Dia);
 Diat = Dia./vol;
 
 zl =1;
-yl = 2;
-withsides = true;
+yl = 1;
+withsides = false;
 %Original Flux Calc
 Frics = squeeze(nansum(nansum(JFz(:,yl:end-yl,zl,:).*mask(:,yl:end-yl,zl,:))) - nansum(nansum(JFz(:,yl:end-yl,end-zl+1,:).*mask(:,yl:end-yl,end-zl+1,:)))).*dx.*dy;
 if withsides; Frics = Frics+squeeze(nansum(nansum(JFy(:,end-yl,:,:).*mask(:,end-yl,:,:))) - nansum(nansum(JFy(:,yl,:,:).*mask(:,yl,:,:)))).*dz.*dx; end;
@@ -150,16 +153,21 @@ Diast = Diast - Diast(1);
 
 %Alternate Flux Calc
 % JINT = cumtrapz(t, JFz, 4);
-% Frics = squeeze(nansum(nansum(JINT(:,yl:end-yl, zl,:).*mask(:,yl:end-yl,zl,:))) - nansum(nansum(JINT(:,yl:end-yl,end-zl+1,:).*mask(:,yl:end-yl,end-zl+1,:)))).*dy.*dy;
+% % Frics = squeeze(nansum(nansum(JINT(:,yl:end-yl, zl,:).*mask(:,yl:end-yl,zl,:))) - nansum(nansum(JINT(:,yl:end-yl,end-zl+1,:).*mask(:,yl:end-yl,end-zl+1,:)))).*dy.*dy;
+% Frics = squeeze(nansum(nansum(JINT(:,yl:end-yl, zl,:).*mask(:,yl:end-yl,zl,:))) ).*dy.*dy;
+% 
 % Fricst = Frics./vol;
 % 
 % BINT = cumtrapz(t, JBz, 4);
-% Dias = squeeze(nansum(nansum(BINT(:,yl:end-yl, zl,:).*mask(:,yl:end-yl,zl,:))) - nansum(nansum(BINT(:,yl:end-yl,end-zl+1,:).*mask(:,yl:end-yl,end-zl+1,:)))).*dy.*dy;
+% % Dias = squeeze(nansum(nansum(BINT(:,yl:end-yl, zl,:).*mask(:,yl:end-yl,zl,:))) - nansum(nansum(BINT(:,yl:end-yl,end-zl+1,:).*mask(:,yl:end-yl,end-zl+1,:)))).*dy.*dy;
+% Dias = squeeze(nansum(nansum(BINT(:,yl:end-yl, zl,:).*mask(:,yl:end-yl,zl,:))) ).*dy.*dy;
+% 
 % Diast = Dias./vol;
 
 
 
 Qi = Qdir.*mask;
+% Qi = Qdir;
 Qi(~isfinite(Qi)) = 0;
 Qi = cumtrapz(t, Qi, 4);
 Qta = squeeze(nansum(nansum(nansum(Qi)))).*gridvol; %This is volume integral of dQ/dt
@@ -183,7 +191,7 @@ Qa = Qa-Qa(1);
 Qa = Qa./vol;% 
 % Qa = Qa./1035
 %%
-residual = cumtrapz(t, uterm-bterm, 4);
+residual = cumtrapz(t, uterm+bterm, 4);
 residual = squeeze(nansum(nansum(nansum(residual.*mask)))).*gridvol;
 residual = residual./vol;
 residavg = residual;
@@ -199,9 +207,9 @@ hold on
 % 
 % plot(-Diat, 'LineWidth', 2);
 
-plot(-(Fricst+Diast-residavg), 'LineWidth', 3, 'LineStyle', '--');
+plot(-(Fricst+Diast), 'LineWidth', 3, 'LineStyle', '--');
 % plot(qdira);
-plot(Qda, 'LineWidth', 2)
+plot(Qda, 'LineWidth', 2, 'LineStyle', '--')
 plot(-Fricst); 
 plot(-Diast);
 plot(-(Fricst+Diast));
@@ -213,6 +221,9 @@ legend('Q', 'Sum (no Res)','Q_{Direct}',  'Fric(0)', 'Dia(0)', 'Sum(0)', 'Sum(\n
 xlabel('Num time steps (30 min)');
 ylabel('\Delta Q');
 grid on
+
+%%
+% scatter(Qa, -Fricst-Diast)
 %%
 % Make Time Series Figure of DeltaQ and Fluxes
 figure

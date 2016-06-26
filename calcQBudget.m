@@ -51,8 +51,9 @@ Q = OMEGAX.*bx + OMEGAY.*by + OMEGAZ.*bz; %A more direct definition of Q.
 % Q = OMEGAZ.*bz;
 %%
 %Calculate Q from the momentum budget:
-advterms = false;
+advterms = true;
 if advterms
+    disp('Including Adv Terms in QDir');
 LHSV = GetVar(statefile, diagfile, {'TOTVTEND', 'Vm_Advec', '(1)/86400-(2)'}, slice);
  LHSV = LHSV-dpdy;
 else
