@@ -3,17 +3,18 @@
   clc; clear all; close all;
  statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc';
 % Parameters            
-dx = 500; dy = dx; dz = 3;
-nx = 96; ny=192; nz=200;
-ts = 3600;
-
-% dx = 1000; dy = dx; dz = 2.5;
-% nx = 48; ny=96; nz=200;
+% dx = 500; dy = dx; dz = 3;
+% nx = 96; ny=192; nz=200;
 % ts = 3600;
+
+dx = 1000; dy = dx; dz = 2.5;
+nx = 48; ny=96; nz=200;
+ts = 1800;
 
 TtoB = 9.81.*2e-4;
 tslice = [10 200];
 tslice = [10 69];
+tslice = [600 699];
 slice={0, 0, 0, tslice};%100 120
 sliceEta={0,0,[1 1],tslice};%251 271
 
@@ -99,29 +100,25 @@ colorbar
 % Integrate in Volume.
 disp('Integrate Over Volume');
 
-
+%Params
 [~, ~, ~, nt] = size(Q);
 t = (1:nt).*ts;
-% JAxi = JAx.*mask; JAyi = JAy.*mask; JAzi = JAz.*mask;
-% JFxi = JFx.*mask; JFyi = JFy.*mask; JFzi = JFz.*mask;
-% JBxi = JBx.*mask; JByi = JBy.*mask; JBzi = JBz.*mask;
+gridvol = dx.*dy.*dz;
+vol = dx.*dy.*dz.*squeeze(sum(sum(sum(mask))));
+% vol =1;
+
+% Calculate Fluxes as integrals over divergences.
+%Friction
 Frici = FricDiv;%.*mask;
 Frici(~isfinite(Frici)) = 0;
 Advi = AdvDiv;%.*mask;
 Advi(~isfinite(Advi)) = 0;
 Diai = DiaDiv;%.*mask;
 Diai(~isfinite(Diai))=0;
-
-vol = dx.*dy.*dz.*squeeze(sum(sum(sum(mask))));
-vol =1;
-
-gridvol = dx.*dy.*dz;
-
 % Frici = cumtrapz(t, Frici, 4);
 Frici = Frici.*mask;
 % Fric = squeeze(nansum(nansum(nansum(Frici)))).*gridvol;
 Fric = squeeze(trapz(trapz(trapz(Frici)))).*gridvol;
-
 Fric = cumtrapz(t, Fric);
 Frict = Fric./vol;
 % Advi = cumtrapz(t, Advi, 4);
@@ -137,6 +134,7 @@ Fric = squeeze(trapz(trapz(trapz(Frici)))).*gridvol;
 Dia = cumtrapz(t,Dia);
 Diat = Dia./vol;
 
+%Calculate as surface fluxes
 zl =1;
 yl = 1;
 withsides = false;
@@ -165,7 +163,7 @@ Diast = Diast - Diast(1);
 % Diast = Dias./vol;
 
 
-
+%Integrate dQdt from Mom equations (should follow same order as J vectors).
 Qi = Qdir.*mask;
 % Qi = Qdir;
 Qi(~isfinite(Qi)) = 0;
@@ -174,15 +172,8 @@ Qta = squeeze(nansum(nansum(nansum(Qi)))).*gridvol; %This is volume integral of 
 Qda = Qta./vol; %Time Integral of Vol Integral of dQ/dt.
 Qda = Qda - Qda(1);
 
-% Qi = Q;
-% Qi(~isfinite(Qi)) = 0;
-% Qi = Qi - repmat(Qi(:,:,:,1), [1 1 1 nt]);
-% Qi = Qi.*mask;
-% Qa = squeeze(nansum(nansum(nansum(Qi)))).*gridvol;
-% Qt = gradient(Qa, ts);
-% Qa = Qa./vol;% 
-rho = 1035.*(1-(THETA-16.5).*2e-4);
-% Qi = Q.*rho;
+
+% Calculate from Q term.
 Qi(~isfinite(Qi)) = 0;
 Qi = Qi.*mask;
 Qa = squeeze(nansum(nansum(nansum(Qi)))).*gridvol;
