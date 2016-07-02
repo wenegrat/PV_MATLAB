@@ -1,20 +1,24 @@
 %% 
 % GENERATE ISOPYCNAL BUDGET
-  clc; clear all; close all;
+  clc; clear all; %close all;
  statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc';
 % Parameters            
-% dx = 500; dy = dx; dz = 3;
-% nx = 96; ny=192; nz=200;
+dx = 500; dy = dx; dz = 2.5;
+nx = 48; ny=48; nz=200;
+ts = 3600;
+
+% dx = 1000; dy = dx; dz = 2.5;
+% nx = 48; ny=96; nz=200;
 % ts = 3600;
 
-dx = 1000; dy = dx; dz = 2.5;
-nx = 48; ny=96; nz=200;
-ts = 1800;
+% dx = 250; dy = dx; dz = 4;
+% nx = 96; ny=96; nz=150;
+% ts = 3600;
 
 TtoB = 9.81.*2e-4;
 tslice = [10 200];
-tslice = [10 69];
-tslice = [600 699];
+tslice = [230 309];
+ tslice = [100 299];
 slice={0, 0, 0, tslice};%100 120
 sliceEta={0,0,[1 1],tslice};%251 271
 
@@ -53,21 +57,21 @@ for i=1:incc:(tslice(end)-tslice(1)+1)
    slicetemp = {slice{1}, slice{2}, slice{3}, [tslice(1)+i-1 tslice(1)+i-1+inc]};
    [Q(:,:,:,i:i+inc), Qdir(:,:,:,i:i+inc), JAx(:,:,:,i:i+inc), JAy(:,:,:,i:i+inc), JAz(:,:,:,i:i+inc), ...
        JFx(:,:,:,i:i+inc), JFy(:,:,:,i:i+inc), JFz(:,:,:,i:i+inc), JBx(:,:,:,i:i+inc), JBy(:,:,:,i:i+inc), JBz(:,:,:,i:i+inc)] ...
-       = calcQBudget(diagfile, statefile, etanfile, [nx, ny, incc], slicetemp, dx, dy);
+       = calcQBudgetD(diagfile, statefile, etanfile, [nx, ny, incc], slicetemp, dx, dy);
 
    FricDiv(:,:,:,i:i+inc) = Drv(dx, JFx(:,:,:,i:i+inc), 'x') + Drv(dy, JFy(:,:,:,i:i+inc), 'y') + Drv(metric, JFz(:,:,:,i:i+inc), 'z');
    AdvDiv(:,:,:,i:i+inc) = Drv(dx, JAx(:,:,:,i:i+inc), 'x') + Drv(dy, JAy(:,:,:,i:i+inc), 'y') + Drv(metric, JAz(:,:,:,i:i+inc), 'z');
    DiaDiv(:,:,:,i:i+inc) = Drv(dx, JBx(:,:,:,i:i+inc), 'x') + Drv(dy, JBy(:,:,:,i:i+inc), 'y') + Drv(metric, JBz(:,:,:,i:i+inc), 'z');
    THETA(:,:,:,i:i+inc) = GetVar(statefile, diagfile, {'THETA', '(1)'}, slicetemp);
-   [resid(:,:,:,i:i+inc), uterm(:,:,:,i:i+inc), bterm(:,:,:,i:i+inc)] = AssessQCancellation(statefile, diagfile, slicetemp);
+%    [resid(:,:,:,i:i+inc), uterm(:,:,:,i:i+inc), bterm(:,:,:,i:i+inc)] = AssessQCancellation(statefile, diagfile, slicetemp);
 end
 
 %%
 % Generate Mask
 mask = zeros(nx, ny, nz, tslice(end)-tslice(1)+1);
 isoT = [16.55 16.9];
-% isoT = [16.5 16.95];
- isoT = [3 30];
+isoT = [ 17 17.25];
+%  isoT = [1 100];
 % isoT = [16.9 30];
 % isoT = [3 16.55];
 [nx, ny, nz, nt] = size(THETA);
@@ -76,17 +80,18 @@ for i=1:nt;
    mask(:,:,:,i) = (THETA(:,:,:,i)>isoT(1)) & (THETA(:,:,:,i)<isoT(2));
 end 
 
-mask(:,end-2:end,:,:) = 0; %wall effects that might be in Q
+% mask(:,end-2:end,:,:) = 0; %wall effects that might be in Q
+% mask(:,:,1:2,:) = 0; % Ad hoc removal of part of Q to compensate for calc of J vectors.
 %%
 tind = floor((tslice(2)-tslice(1))/2);
-
-[c, h] = contourf(squeeze(THETA(:,:,1,tind)).', linspace(15, 20, 100)); shading interp
-set(h, 'edgecolor','none')
-xlabel('x'); ylabel('y');
-hold on
-contour(squeeze(THETA(:,:,1,tind)).', isoT, 'k')
-set(gca, 'clim', [16 17])
-colorbar
+% 
+% [c, h] = contourf(squeeze(THETA(:,:,1,tind)).', linspace(15, 20, 100)); shading interp
+% set(h, 'edgecolor','none')
+% xlabel('x'); ylabel('y');
+% hold on
+% contour(squeeze(THETA(:,:,1,tind)).', isoT, 'k')
+% set(gca, 'clim', [16 17])
+% colorbar
 %%
 % Mask by depth
 %zl = [1 20];
@@ -115,50 +120,56 @@ Advi = AdvDiv;%.*mask;
 Advi(~isfinite(Advi)) = 0;
 Diai = DiaDiv;%.*mask;
 Diai(~isfinite(Diai))=0;
-% Frici = cumtrapz(t, Frici, 4);
+Frici = cumtrapz(t, Frici, 4);
 Frici = Frici.*mask;
 % Fric = squeeze(nansum(nansum(nansum(Frici)))).*gridvol;
 Fric = squeeze(trapz(trapz(trapz(Frici)))).*gridvol;
-Fric = cumtrapz(t, Fric);
+% Fric = cumtrapz(t, Fric);
 Frict = Fric./vol;
-% Advi = cumtrapz(t, Advi, 4);
+Advi = cumtrapz(t, Advi, 4);
 Advi = Advi.*mask;
 Adv = squeeze(nansum(nansum(nansum(Advi)))).*gridvol;
-Adv = cumtrapz(t,Adv);
+% Adv = cumtrapz(t,Adv);
 Advt = Adv./vol;
-% Diai = cumtrapz(t, Diai, 4);
+Diai = cumtrapz(t, Diai, 4);
 Diai = Diai.*mask;
 Dia = squeeze(nansum(nansum(nansum(Diai)))).*gridvol;
 Fric = squeeze(trapz(trapz(trapz(Frici)))).*gridvol;
 
-Dia = cumtrapz(t,Dia);
+% Dia = cumtrapz(t,Dia);
 Diat = Dia./vol;
 
 %Calculate as surface fluxes
+zlt = 2;
 zl =1;
-yl = 1;
+yln = 0;
+yls = 1;
 withsides = false;
 %Original Flux Calc
-Frics = squeeze(nansum(nansum(JFz(:,yl:end-yl,zl,:).*mask(:,yl:end-yl,zl,:))) - nansum(nansum(JFz(:,yl:end-yl,end-zl+1,:).*mask(:,yl:end-yl,end-zl+1,:)))).*dx.*dy;
-if withsides; Frics = Frics+squeeze(nansum(nansum(JFy(:,end-yl,:,:).*mask(:,end-yl,:,:))) - nansum(nansum(JFy(:,yl,:,:).*mask(:,yl,:,:)))).*dz.*dx; end;
+Frics = squeeze(nansum(nansum(JFz(:,yls:end-yln,zlt,:).*mask(:,yls:end-yln,zlt,:))) - nansum(nansum(JFz(:,yls:end-yln,end-zl+1,:).*mask(:,yls:end-yln,end-zl+1,:)))).*dx.*dy;
+% Frics = squeeze(nansum(nansum(JFz(:,yls:end-yln,zlt,:).*mask(:,yls:end-yln,zlt,:)))).*dx.*dy;
+
+if withsides; Frics = Frics+squeeze(nansum(nansum(JFy(:,end-yln,:,:).*mask(:,end-yln,:,:))) - nansum(nansum(JFy(:,yls,:,:).*mask(:,yls,:,:)))).*dz.*dx; end;
 Fricst = cumtrapz(Frics).*ts./vol;
 Fricst = Fricst - Fricst(1);
 
-Dias = squeeze(nansum(nansum(JBz(:,yl:end-yl,zl,:).*mask(:,yl:end-yl,zl,:))) - nansum(nansum(JBz(:,yl:end-yl,end-zl+1,:).*mask(:,yl:end-yl,end-zl+1,:)))).*dx.*dy;
-if withsides; Dias = Dias+squeeze(nansum(nansum(JBy(:,end-yl,:,:).*mask(:,end-yl,:,:))) - nansum(nansum(JBy(:,yl,:,:).*mask(:,yl,:,:)))).*dz.*dx; end;
+Dias = squeeze(nansum(nansum(JBz(:,yls:end-yln,zlt,:).*mask(:,yls:end-yln,zlt,:))) - nansum(nansum(JBz(:,yls:end-yln,end-zl+1,:).*mask(:,yls:end-yln,end-zl+1,:)))).*dx.*dy;
+% Dias = squeeze(nansum(nansum(JBz(:,yls:end-yln,zl,:).*mask(:,yls:end-yln,1,:))) ).*dx.*dy;
+
+if withsides; Dias = Dias+squeeze(nansum(nansum(JBy(:,end-yln,:,:).*mask(:,end-yln,:,:))) - nansum(nansum(JBy(:,yls,:,:).*mask(:,yls,:,:)))).*dz.*dx; end;
 Diast = cumtrapz(Dias).*ts./vol;
 Diast = Diast - Diast(1);
 
 %Alternate Flux Calc
 % JINT = cumtrapz(t, JFz, 4);
 % % Frics = squeeze(nansum(nansum(JINT(:,yl:end-yl, zl,:).*mask(:,yl:end-yl,zl,:))) - nansum(nansum(JINT(:,yl:end-yl,end-zl+1,:).*mask(:,yl:end-yl,end-zl+1,:)))).*dy.*dy;
-% Frics = squeeze(nansum(nansum(JINT(:,yl:end-yl, zl,:).*mask(:,yl:end-yl,zl,:))) ).*dy.*dy;
+% Frics = squeeze(nansum(nansum(JINT(:,yls:end-yln, zlt,:).*mask(:,yls:end-yln,zlt,:))) ).*dy.*dy;
 % 
 % Fricst = Frics./vol;
 % 
 % BINT = cumtrapz(t, JBz, 4);
 % % Dias = squeeze(nansum(nansum(BINT(:,yl:end-yl, zl,:).*mask(:,yl:end-yl,zl,:))) - nansum(nansum(BINT(:,yl:end-yl,end-zl+1,:).*mask(:,yl:end-yl,end-zl+1,:)))).*dy.*dy;
-% Dias = squeeze(nansum(nansum(BINT(:,yl:end-yl, zl,:).*mask(:,yl:end-yl,zl,:))) ).*dy.*dy;
+% Dias = squeeze(nansum(nansum(BINT(:,yls:end-yln, zlt,:).*mask(:,yls:end-yln,zlt,:))) ).*dy.*dy;
 % 
 % Diast = Dias./vol;
 
@@ -174,18 +185,20 @@ Qda = Qda - Qda(1);
 
 
 % Calculate from Q term.
+Qi = Q;
 Qi(~isfinite(Qi)) = 0;
 Qi = Qi.*mask;
 Qa = squeeze(nansum(nansum(nansum(Qi)))).*gridvol;
 Qt = gradient(Qa, ts);
 Qa = Qa-Qa(1);
-Qa = Qa./vol;% 
+ Qa = Qa./vol;%
+
 % Qa = Qa./1035
 %%
-residual = cumtrapz(t, uterm+bterm, 4);
-residual = squeeze(nansum(nansum(nansum(residual.*mask)))).*gridvol;
-residual = residual./vol;
-residavg = residual;
+% residual = cumtrapz(t, uterm+bterm, 4);
+% residual = squeeze(nansum(nansum(nansum(residual.*mask)))).*gridvol;
+% residual = residual./vol;
+% residavg = residual;
 %%
 % Make Time Series Figure of DeltaQ and Fluxes
 figure
@@ -198,7 +211,7 @@ hold on
 % 
 % plot(-Diat, 'LineWidth', 2);
 
-plot(-(Fricst+Diast), 'LineWidth', 3, 'LineStyle', '--');
+% plot(-(Fricst+Diast), 'LineWidth', 3, 'LineStyle', '--');
 % plot(qdira);
 plot(Qda, 'LineWidth', 2, 'LineStyle', '--')
 plot(-Fricst); 
@@ -208,15 +221,18 @@ plot(-(Fricst+Diast));
 plot(-(Frict+Diat));
 % plot(-(Qa-Qda));
 hold off
-legend('Q', 'Sum (no Res)','Q_{Direct}',  'Fric(0)', 'Dia(0)', 'Sum(0)', 'Sum(\nabla J)');
-xlabel('Num time steps (30 min)');
+legend('Q','Q_{Direct}',  'Fric(0)', 'Dia(0)', 'Sum(0)', 'Sum(\nabla J)');
+xlabel('Num time steps (60 min)');
 ylabel('\Delta Q');
 grid on
 
 %%
+% figure
+% plot((Qa+Fricst+Diast)./Qa)
 % scatter(Qa, -Fricst-Diast)
 %%
 % Make Time Series Figure of DeltaQ and Fluxes
+cl = [17 17.4];
 figure
 subplot(2,2,1:2)
 plot(Qa, 'LineWidth', 2)
@@ -224,24 +240,25 @@ hold on
 plot(-Fricst); 
 plot(-Diast);
 plot(-(Fricst+Diast));
+plot(-(Frict + Diat));
 % plot(Qda+Advt);
 hold off
 legend('Q', 'Fric', 'Dia', 'Sum');
-xlabel('Num time steps (30 minutes)');
+xlabel('Num time steps (60 minutes)');
 ylabel('\Delta Q');
 grid on
 title(num2str(isoT))
 subplot(2,2,3)
 pcolor(squeeze(THETA(:,:,1,tind)).'); shading interp
-set(gca, 'clim', [16 17])
+set(gca, 'clim', cl)
 xlabel('x'); ylabel('y');
 hold on
 contour(squeeze(THETA(:,:,1,tind)).', isoT, 'k')
 colorbar
 subplot(2,2,4)
 pcolor(squeeze(THETA(20,:,:,tind)).'); shading interp
-set(gca, 'clim', [16 17])
-xlabel('x'); ylabel('z');
+set(gca, 'clim', cl)
+xlabel('y'); ylabel('z');
 hold on
 contour(squeeze(THETA(20,:,:,tind)).', isoT, 'k')
 set(gca, 'ydir', 'reverse')
@@ -266,16 +283,18 @@ plot(-(Frics+Dias), 'LineWidth', 2, 'LineStyle', '--');
 
 hold off
 legend('dQ/dt', 'Fric', 'Dia', 'Sum', 'Qdir');
-xlabel('Num time steps (30 min)');
+xlabel('Num time steps (60 min)');
 ylabel('dQ/dt');
 grid on
 
 %%
 % Pointwise budget
 [~, ~, ~, qt] = gradient(Q, ts);
+res = qt - FricDiv - AdvDiv - DiaDiv;
+% res = qt - Qdir;
 %%
-indj = 45;
-indk = 45;
+indj = 24;
+indk = 46;
 indd = 3;
 
 figure
@@ -290,3 +309,22 @@ plot(squeeze( - DiaDiv(indj, indk, indd,:)));
 hold off
 
 legend('dqdt', 'RHS SUM', '-Div(J_A)', '-Div(J_F)', '-Div(J_B)');
+
+%%
+divs = -AdvDiv -DiaDiv-FricDiv;
+figure
+subplot(1,2,1)
+plot(squeeze(nanmean(nanmean(nanmean(qt,4),3))))
+hold on
+plot(squeeze(nanmean(nanmean(nanmean(divs,4),3))));
+plot(squeeze(nanmean(nanmean(nanmean(-FricDiv,4),3))));
+plot(squeeze(nanmean(nanmean(nanmean(-DiaDiv,4),3))));
+
+
+hold off
+
+subplot(1,2,2)
+pcolor(squeeze(nanmean(nanmean(qt-divs,3))))
+hold on
+% pcolor(squeeze(nanmean(nanmean(divs,3))));
+hold off

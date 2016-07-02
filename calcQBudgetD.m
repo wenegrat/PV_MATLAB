@@ -1,4 +1,4 @@
-function [Q,Qdir, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz] = calcQBudget(diagfile, statefile, etanfile, sizes, slice, dx, dy )
+function [Q,Qdir, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz] = calcQBudgetD(diagfile, statefile, etanfile, sizes, slice, dx, dy )
 nx = sizes(1); ny = sizes(2); nt=sizes(3);
 sliceEta = {slice{1}, slice{2}, [1 1], slice{4}};
 TtoB = 9.81.*2e-4;
@@ -13,11 +13,13 @@ zL = length(ztmp);
 
 dpdx = GetVar(statefile,diagfile, {'Um_dPHdx','(1)'},slice);
 dEtadx = squeeze(GetVar(statefile, etanfile, {'ETAN','-9.81*(1)'},sliceEta));
-dEtadx = DxPeriodic(dEtadx, dx);
+dEtadx = DPeriodic(dEtadx, dx,'x');
 dpdx = permute(repmat((dEtadx), [1, 1, 1, zL]), [1 2 4 3]) + dpdx;
 
 dpdy = GetVar(statefile,diagfile, {'Vm_dPHdy','(1)'},slice);
-dEtady = squeeze(GetVar(statefile, etanfile, {'ETAN','-9.81*Dy(1)'},sliceEta));  
+dEtady = squeeze(GetVar(statefile, etanfile, {'ETAN','-9.81*(1)'},sliceEta));  
+dEtady = DPeriodic(dEtady, dy, 'y');
+% dEtady(:,end-1,:) = 0.5.*dEtady(:,end-2,:);
 dpdy = permute(repmat((dEtady), [1, 1, 1, zL]), [1 2 4 3]) + dpdy;
 
 %%
@@ -27,12 +29,14 @@ dpdy = permute(repmat((dEtady), [1, 1, 1, zL]), [1 2 4 3]) + dpdy;
 % bx(end,:,:,:) = 0.5.*(bx(end-1,:,:,:));
 % bx(1,:,:,:) = 0.5.*(bx(2,:,:,:));
 b = GetVar(statefile, diagfile, {'b', '(1)'}, slice);
-bx = DxPeriodic(b, dx);
+bx = DPeriodic(b, dx,'x');
 
-by = GetVar(statefile, diagfile, {'b', 'Dy(1)'}, slice);
-by(:,1,:,:) = 0;
-
-by(:,end-1:end,:,:) = 0;
+% by = GetVar(statefile, diagfile, {'b', 'Dy(1)'}, slice);
+by = DPeriodic(b, dy, 'y');
+% by(:,1,:,:) = 0;
+% by(:,end-1:end,:,:) = 0;
+% by(:,end-1,:,:) = 0.5*by(:,end-2,:,:);
+% by(:,1,:,:) = 0.5.*by(:,2,:,:);
 bz = GetVar(statefile, diagfile, {'b', 'Dz(1)'}, slice);
 bz(:,:,end,:)= 0;
 %% 
@@ -48,19 +52,22 @@ OMEGAY = GetVar(statefile, diagfile, {'UVEL', 'Dz(1)'}, slice);
 
 % OMEGAZ = GetVar(statefile, diagfile, {'f_1e-4', 'VVEL', 'UVEL', '(1) + Dx(2) - Dy(3)'}, slice);
 V = GetVar(statefile, diagfile, {'VVEL', '(1)'}, slice);
-OMEGAZ = DxPeriodic(V, dx);
+OMEGAZ = DPeriodic(V, dx,'x');
 % OMEGAZ = GetVar(statefile, diagfile, {'VVEL', 'Dx(1)'},slice);
-OMEGAZ = OMEGAZ + GetVar(statefile, diagfile, {'UVEL', '-Dy(1)'}, slice);
+% Uy = Drv(dy, U, 'y');
+% Uy(:,end-1,:,:) = 0.5.*Uy(:,end-2,:,:);
+Uy = DPeriodic(U, dy, 'y');
+OMEGAZ = OMEGAZ  -Uy;
 OMEGAZ = OMEGAZ + 1e-4;
 Q = OMEGAX.*bx + OMEGAY.*by + OMEGAZ.*bz; %A more direct definition of Q.
 % Q = OMEGAZ.*bz;
 %%
 %Calculate Q from the momentum budget:
 advterms = true;
-directADV = false;
-diagOUT = true;
-LHSU = GetVar(statefile, diagfile, {'TOTUTEND', '(1)/86400'}, slice);
-LHSV = GetVar(statefile, diagfile, {'TOTVTEND', '(1)/86400'}, slice);
+directADV = true;
+diagOUT = false;
+LHSUt = GetVar(statefile, diagfile, {'TOTUTEND', '(1)/86400'}, slice);
+LHSVt = GetVar(statefile, diagfile, {'TOTVTEND', '(1)/86400'}, slice);
 if advterms
     disp('Including Adv Terms in QDir');
 
@@ -79,14 +86,15 @@ if advterms
          disp('Using Direct Advection Terms');
 %         Vx = GetVar(statefile, diagfile, {'VVEL', 'Dx(1)'}, slice);
         V = GetVar(statefile, diagfile, {'VVEL', '(1)'}, slice);
-        Vx = DxPeriodic(V, dx);
-        Vy = GetVar(statefile, diagfile, {'VVEL', 'Dy(1)'}, slice);
+        Vx = DPeriodic(V, dx, 'x');
+%         Vy = GetVar(statefile, diagfile, {'VVEL', 'Dy(1)'}, slice);
+        Vy = DPeriodic(V, dy, 'y');
         Vz = GetVar(statefile, diagfile, {'VVEL', 'Dz(1)'}, slice);
         VADVTERM = -U.*Vx - V.*Vy - W.*Vz + Vm_Cori;
         end
     end
     %Notice I've removed the dpdy here and below...doesn't matter, perfect cancellation (numerics aside).
-    LHSV = LHSV - VADVTERM; - dpdy;
+    LHSV = LHSVt - VADVTERM; - dpdy;
     if ~directADV
     UADVTERM = GetVar(statefile, 'extra.nc', {'Um_Advec', '(1)'}, slice);
 %      UADVTERM = GetVar(statefile, diagfile, {'ADVx_Um', 'ADVy_Um', 'ADVrE_Um', 'Um_Cori', ['-Dx(1)/',divstrz, '-Dy(2)/', divstrz,'-Dz(3)/', divstrh,'+(4)']}, slice);
@@ -100,23 +108,24 @@ if advterms
         else
 %         Ux = GetVar(statefile, diagfile, {'UVEL', 'Dx(1)'}, slice);
         U = GetVar(statefile, diagfile, {'UVEL', '(1)'}, slice);
-        Ux = DxPeriodic(U, dx);
-        Uy = GetVar(statefile, diagfile, {'UVEL', 'Dy(1)'}, slice);
+        Ux = DPeriodic(U, dx,'x');
+%         Uy = GetVar(statefile, diagfile, {'UVEL', 'Dy(1)'}, slice);
+        Uy = DPeriodic(U, dy, 'y');
         Uz = GetVar(statefile, diagfile, {'UVEL', 'Dz(1)'}, slice);
         UADVTERM = -U.*Ux - V.*Uy - W.*Uz + Um_Cori;
         end
 
     end
-    LHSU = LHSU - UADVTERM; - dpdx;
+    LHSU = LHSUt - UADVTERM; - dpdx;
    
 end
 
 %  LHSU = -dpdx;
-QXz = Drv(metric, LHSU, 'z',1,1);
-QXy = Drv(dy, LHSU, 'y', 1,1);
-QVz = Drv(metric, LHSV, 'z', 1, 1);
-% QVx = Drv(dx, LHSV, 'x',1,1);
-QVx = DxPeriodic(LHSV, dx);
+QXz = Drv(metric, LHSUt, 'z',1,1);
+% QXy = Drv(dy, LHSUt, 'y', 1,1);
+QXy = DPeriodic(LHSUt, dy, 'y');
+QVz = Drv(metric, LHSVt, 'z', 1, 1);
+QVx = DPeriodic(LHSVt, dx, 'x');
 Qmom = -bx.*QVz + by.*QXz + bz.*(QVx - QXy);
 
 if advterms
@@ -137,11 +146,13 @@ else
 end
 %disp('Badv=0');
 % LHSb = TtoB.*GetVar(statefile, diagfile, {'TOTTTEND', '(1)/86400'}, slice); %NOTE THAT I AM AD HOC JUST TURNING OFF ADVEC
+LHSbt = TtoB.*GetVar(statefile, diagfile, {'TOTTTEND', '(1)/86400'}, slice);
 
 % LHBx = Drv(dx, LHSb, 'x', 1, 1);
-LHBx = DxPeriodic(LHSb, dx);
-LHBy = Drv(dy, LHSb, 'y', 1, 1);
-LHBz = Drv(metric, LHSb, 'z', 1, 1);
+LHBx = DPeriodic(LHSbt, dx,'x');
+% LHBy = Drv(dy, LHSbt, 'y', 1, 1);
+LHBy = DPeriodic(LHSbt, dy, 'y');
+LHBz = Drv(metric, LHSbt, 'z', 1, 1);
 Qb = OMEGAX.*LHBx + OMEGAY.*LHBy + OMEGAZ.*LHBz;
 Qdir = Qmom + Qb;
 

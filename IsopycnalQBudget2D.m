@@ -3,12 +3,12 @@
   clc;
  statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc';
 % Parameters            
-dx = 1000; dy = dx; dz = 2.5;
-nx = 1; ny=96; nz=200;
-ts = 1800;
+dx = 2500; dy = dx; dz = 2.5;
+nx = 1; ny=20; nz=200;
+ts = 3600;
 TtoB = 9.81.*2e-4;
 tslice = [10 200];
-tslice = [100 1430];
+tslice = [10 479];
 slice={0, 0, 0, tslice};%100 120
 sliceEta={0,0,[1 1],tslice};%251 271
 
@@ -188,7 +188,7 @@ plot(-(Fricst+Diast));
 % plot(Qda+Advt);
 hold off
 legend('Q', 'Fric', 'Dia', 'Sum');
-xlabel('Num time steps (30 minutes)');
+xlabel('Num time steps (Hours)');
 ylabel('\Delta Q');
 grid on
 title(num2str(isoT))
@@ -198,14 +198,16 @@ title(num2str(isoT))
 % hold on
 % contour(squeeze(THETA(:,:,1,700)).', isoT, 'k')
 % colorbar
+[nx, ny, nz, nt] = size(Q);
 subplot(1,4,4)
-pcolor(squeeze(THETA(1,:,:,700)).'); shading interp
+pcolor(squeeze(THETA(1,:,:,floor(nt))).'); shading interp
 set(gca, 'clim', [16 17])
 xlabel('y'); ylabel('z');
 hold on
-contour(squeeze(THETA(1,:,:,700)).', isoT, 'k')
+contour(squeeze(THETA(1,:,:,floor(nt))).', isoT, 'k')
 set(gca, 'ydir', 'reverse')
 colorbar
+set(gcf, 'Position', [355          82        1479         533]);
 
 %%
 % Normalized Error Plot
@@ -223,7 +225,7 @@ plot(Qa, 'LineWidth', 2)
 hold on
 plot(-Frict, 'LineWidth', 2);
 
-plot(-Advt, 'LineWidth', 2);
+% plot(-Advt, 'LineWidth', 2);
 % plot(-qdivt, 'LineWidth', 2);
 
 plot(-Diat, 'LineWidth', 2);

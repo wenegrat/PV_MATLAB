@@ -1,12 +1,12 @@
 % nx = 96; ny = 192;
 % dz = 3;
 
-nx = 48; ny=96;
-dz = 2.5;
+nx = 96; ny=96;
+dz = 4;
 % tslice = [200 350];
 slice={0, 0, 0, tslice};%100 120
-divstrh = '1e6';
-divstrz = '2.5e3';
+divstrh = '62500';
+divstrz = '1e3';
 kpp = false;
 TEND = NaN(nx, ny, nz, tslice(end)-tslice(1)+1);
 ADV = TEND;
@@ -42,7 +42,7 @@ pcolor(squeeze(RES(:,:,ind)./tmean));
 colorbar
 
 %%
-indx = 20; indy = 20; indz = 4;
+indx = 25; indy = 45; indz = 1;
 
 figure
 plot(squeeze(TEND(indx, indy, indz,:)));
@@ -51,14 +51,14 @@ plot(squeeze(ADV(indx, indy, indz,:)));
 plot(squeeze(DIFF(indx, indy, indz,:)));
 plot(squeeze(RES(indx, indy, indz,:)), 'LineWidth', 2);
 plot(squeeze(RHS(indx, indy, indz,:)), 'LineWidth', 2, 'LineStyle', '--');
-
+% plot(squeeze(abgt(indx, indy, indz,:)));
 hold off
 legend('TEND', 'ADV', 'DIFF', 'RES', 'RHS')
 %%
-plot(squeeze(TENDZ(indx, indy, indz,:)));
-hold on
-plot(gradient(squeeze(bz(indx, indy, indz, :))./(9.81.*2e-4), 1800));
-hold off
-
-%%
-plot(cumtrapz(squeeze(TENDZ(indx, indy, indz,:))).*1800);
+% plot(squeeze(TENDZ(indx, indy, indz,:)));
+% hold on
+% plot(gradient(squeeze(bz(indx, indy, indz, :))./(9.81.*2e-4), 1800));
+% hold off
+% 
+% %%
+% plot(cumtrapz(squeeze(TENDZ(indx, indy, indz,:))).*1800);

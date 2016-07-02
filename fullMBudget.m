@@ -29,7 +29,7 @@ pcolor(squeeze(RES(:,:,ind)));
 colorbar
 
 %%
-indx = 20; indy = 20; indz = 10;
+indx = 20; indy = 48; indz = 1;
 
 figure
 plot(squeeze(TEND(indx, indy, indz,:)));
