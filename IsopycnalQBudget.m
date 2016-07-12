@@ -1,24 +1,25 @@
 %% 
+tic
 % GENERATE ISOPYCNAL BUDGET
   clc; clear all; %close all;
  statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc';
 % Parameters            
-dx = 500; dy = dx; dz = 2.5;
-nx = 48; ny=48; nz=200;
-ts = 3600;
-
-% dx = 1000; dy = dx; dz = 2.5;
-% nx = 48; ny=96; nz=200;
+% dx = 500; dy = dx; dz = 3;
+% nx = 48; ny=48; nz=200;
 % ts = 3600;
 
-% dx = 250; dy = dx; dz = 4;
-% nx = 96; ny=96; nz=150;
+dx = 250; dy = dx; dz = 3;
+nx = 96; ny=144; nz=100;
+ts = 3600;
+% 
+% dx = 250; dy = dx; dz = 3;
+% nx = 96; ny=192; nz=200;
 % ts = 3600;
 
 TtoB = 9.81.*2e-4;
 tslice = [10 200];
 tslice = [230 309];
- tslice = [100 299];
+ tslice = [1 719];
 slice={0, 0, 0, tslice};%100 120
 sliceEta={0,0,[1 1],tslice};%251 271
 
@@ -36,6 +37,8 @@ JFy = Q;
 JAx = Q;
 JAy = Q;
 JAz = Q;
+JFzN = Q;
+JBzN = Q;
 mask = Q;
 FricDiv = Q;
 AdvDiv = Q;
@@ -45,34 +48,80 @@ resid = Q;
 uterm = Q;
 bterm = Q;
 % remaining = (tslice(end)-tslice(1)+1);
-incc =10;
+incc =1;
 inc = incc-1;
 
 ztmp = ncread(statefile, 'Z');
 metric = permute(repmat(ztmp, [1, nx, ny, incc]), [2 3 1 4]);
-for i=1:incc:(tslice(end)-tslice(1)+1)
+% for i=1:incc:(tslice(end)-tslice(1)+1-inc)
+%     disp(num2str(i));
+% %     remaining = @(x)    remaining -1
+% %     disp(['Remaining: ', num2str(remaining), '    (Processing: ', num2str(i),')'])
+%    slicetemp = {slice{1}, slice{2}, slice{3}, [tslice(1)+i-1 tslice(1)+i-1+inc]};
+%    [Q(:,:,:,i:i+inc), Qdir(:,:,:,i:i+inc), JAx(:,:,:,i:i+inc), JAy(:,:,:,i:i+inc), JAz(:,:,:,i:i+inc), ...
+%        JFx(:,:,:,i:i+inc), JFy(:,:,:,i:i+inc), JFz(:,:,:,i:i+inc), JBx(:,:,:,i:i+inc), JBy(:,:,:,i:i+inc), JBz(:,:,:,i:i+inc), JFzN(:,:,:,i:i+inc), JBzN(:,:,:,i:i+inc)] ...
+%        = calcQBudgetD(diagfile, statefile, etanfile, [nx, ny, incc], slicetemp, dx, dy);
+% 
+%    FricDiv(:,:,:,i:i+inc) = Drv(dx, JFx(:,:,:,i:i+inc), 'x') + Drv(dy, JFy(:,:,:,i:i+inc), 'y') + Drv(metric, JFz(:,:,:,i:i+inc), 'z');
+% %    AdvDiv(:,:,:,i:i+inc) = Drv(dx, JAx(:,:,:,i:i+inc), 'x') + Drv(dy, JAy(:,:,:,i:i+inc), 'y') + Drv(metric, JAz(:,:,:,i:i+inc), 'z');
+%    AdvDiv(:,:,:,i:i+inc) = DPeriodic(JAx(:,:,:,i:i+inc), dx, 'x') + DPeriodic(JAy(:,:,:,i:i+inc),dy, 'y') + Drv(metric, JAz(:,:,:,i:i+inc), 'z');
+% 
+%    DiaDiv(:,:,:,i:i+inc) = Drv(dx, JBx(:,:,:,i:i+inc), 'x') + Drv(dy, JBy(:,:,:,i:i+inc), 'y') + Drv(metric, JBz(:,:,:,i:i+inc), 'z');
+%    THETA(:,:,:,i:i+inc) = GetVar(statefile, diagfile, {'THETA', '(1)'}, slicetemp);
+% %    [resid(:,:,:,i:i+inc), uterm(:,:,:,i:i+inc), bterm(:,:,:,i:i+inc)] = AssessQCancellation(statefile, diagfile, slicetemp);
+% end
+
+%Do end bit
+% i = i +incc;
+% slicetemp = {slice{1}, slice{2}, slice{3}, [tslice(1)+i-1 tslice(2)]};
+% metric = permute(repmat(ztmp, [1, nx, ny, slicetemp{4}(2)-slicetemp{4}(1)+1]), [2 3 1 4]);
+% 
+%    [Q(:,:,:,i:end), Qdir(:,:,:,i:end), JAx(:,:,:,i:end), JAy(:,:,:,i:end), JAz(:,:,:,i:end), ...
+%        JFx(:,:,:,i:end), JFy(:,:,:,i:end), JFz(:,:,:,i:end), JBx(:,:,:,i:end), JBy(:,:,:,i:end), JBz(:,:,:,i:end), JFzN(:,:,:,i:end), JBzN(:,:,:,i:end)] ...
+%        = calcQBudgetD(diagfile, statefile, etanfile, [nx, ny, slicetemp{4}(2)-slicetemp{4}(1)+1], slicetemp, dx, dy);
+% 
+%    FricDiv(:,:,:,i:end) = Drv(dx, JFx(:,:,:,i:end), 'x') + Drv(dy, JFy(:,:,:,i:end), 'y') + Drv(metric, JFz(:,:,:,i:end), 'z');
+% %    AdvDiv(:,:,:,i:i+inc) = Drv(dx, JAx(:,:,:,i:i+inc), 'x') + Drv(dy, JAy(:,:,:,i:i+inc), 'y') + Drv(metric, JAz(:,:,:,i:i+inc), 'z');
+%    AdvDiv(:,:,:,i:end) = DPeriodic(JAx(:,:,:,i:end), dx, 'x') + DPeriodic(JAy(:,:,:,i:end),dy, 'y') + Drv(metric, JAz(:,:,:,i:end), 'z');
+% 
+%    DiaDiv(:,:,:,i:end) = Drv(dx, JBx(:,:,:,i:end), 'x') + Drv(dy, JBy(:,:,:,i:end), 'y') + Drv(metric, JBz(:,:,:,i:end), 'z');
+%    THETA(:,:,:,i:end) = GetVar(statefile, diagfile, {'THETA', '(1)'}, slicetemp);
+
+   
+parfor i=1:1:(tslice(end)-tslice(1)+1-inc)
     disp(num2str(i));
 %     remaining = @(x)    remaining -1
 %     disp(['Remaining: ', num2str(remaining), '    (Processing: ', num2str(i),')'])
    slicetemp = {slice{1}, slice{2}, slice{3}, [tslice(1)+i-1 tslice(1)+i-1+inc]};
-   [Q(:,:,:,i:i+inc), Qdir(:,:,:,i:i+inc), JAx(:,:,:,i:i+inc), JAy(:,:,:,i:i+inc), JAz(:,:,:,i:i+inc), ...
-       JFx(:,:,:,i:i+inc), JFy(:,:,:,i:i+inc), JFz(:,:,:,i:i+inc), JBx(:,:,:,i:i+inc), JBy(:,:,:,i:i+inc), JBz(:,:,:,i:i+inc)] ...
+   [Q(:,:,:,i), Qdir(:,:,:,i), JAx(:,:,:,i), JAy(:,:,:,i), JAz(:,:,:,i), ...
+       JFx(:,:,:,i), JFy(:,:,:,i), JFz(:,:,:,i), JBx(:,:,:,i), JBy(:,:,:,i), JBz(:,:,:,i), JFzN(:,:,:,i), JBzN(:,:,:,i)] ...
        = calcQBudgetD(diagfile, statefile, etanfile, [nx, ny, incc], slicetemp, dx, dy);
 
-   FricDiv(:,:,:,i:i+inc) = Drv(dx, JFx(:,:,:,i:i+inc), 'x') + Drv(dy, JFy(:,:,:,i:i+inc), 'y') + Drv(metric, JFz(:,:,:,i:i+inc), 'z');
-   AdvDiv(:,:,:,i:i+inc) = Drv(dx, JAx(:,:,:,i:i+inc), 'x') + Drv(dy, JAy(:,:,:,i:i+inc), 'y') + Drv(metric, JAz(:,:,:,i:i+inc), 'z');
-   DiaDiv(:,:,:,i:i+inc) = Drv(dx, JBx(:,:,:,i:i+inc), 'x') + Drv(dy, JBy(:,:,:,i:i+inc), 'y') + Drv(metric, JBz(:,:,:,i:i+inc), 'z');
-   THETA(:,:,:,i:i+inc) = GetVar(statefile, diagfile, {'THETA', '(1)'}, slicetemp);
+   FricDiv(:,:,:,i) = Drv(dx, JFx(:,:,:,i), 'x') + Drv(dy, JFy(:,:,:,i), 'y') + Drv(metric, JFz(:,:,:,i), 'z');
+%    AdvDiv(:,:,:,i:i+inc) = Drv(dx, JAx(:,:,:,i:i+inc), 'x') + Drv(dy, JAy(:,:,:,i:i+inc), 'y') + Drv(metric, JAz(:,:,:,i:i+inc), 'z');
+   AdvDiv(:,:,:,i) = DPeriodic(JAx(:,:,:,i), dx, 'x') + DPeriodic(JAy(:,:,:,i),dy, 'y') + Drv(metric, JAz(:,:,:,i), 'z');
+
+   DiaDiv(:,:,:,i) = Drv(dx, JBx(:,:,:,i), 'x') + Drv(dy, JBy(:,:,:,i), 'y') + Drv(metric, JBz(:,:,:,i), 'z');
+   THETA(:,:,:,i) = GetVar(statefile, diagfile, {'THETA', '(1)'}, slicetemp);
 %    [resid(:,:,:,i:i+inc), uterm(:,:,:,i:i+inc), bterm(:,:,:,i:i+inc)] = AssessQCancellation(statefile, diagfile, slicetemp);
 end
+
+
+B0 = ncread(etanfile, 'TFLUX');
+X = ncread(statefile, 'X');
+Y = ncread(statefile, 'Y');
+Z = ncread(statefile, 'Z');
+T = ncread(statefile, 'T');
 
 %%
 % Generate Mask
 mask = zeros(nx, ny, nz, tslice(end)-tslice(1)+1);
 isoT = [16.55 16.9];
 isoT = [ 17 17.25];
-%  isoT = [1 100];
-% isoT = [16.9 30];
+isoT = [16.5 16.75];
+isoT = [16.25 16.5];
+ isoT = [1 100];
+% isoT = [16.1 16.3];
 % isoT = [3 16.55];
 [nx, ny, nz, nt] = size(THETA);
 for i=1:nt;
@@ -151,14 +200,19 @@ Frics = squeeze(nansum(nansum(JFz(:,yls:end-yln,zlt,:).*mask(:,yls:end-yln,zlt,:
 
 if withsides; Frics = Frics+squeeze(nansum(nansum(JFy(:,end-yln,:,:).*mask(:,end-yln,:,:))) - nansum(nansum(JFy(:,yls,:,:).*mask(:,yls,:,:)))).*dz.*dx; end;
 Fricst = cumtrapz(Frics).*ts./vol;
-Fricst = Fricst - Fricst(1);
+% Fricst = Fricst - Fricst(1);
 
 Dias = squeeze(nansum(nansum(JBz(:,yls:end-yln,zlt,:).*mask(:,yls:end-yln,zlt,:))) - nansum(nansum(JBz(:,yls:end-yln,end-zl+1,:).*mask(:,yls:end-yln,end-zl+1,:)))).*dx.*dy;
-% Dias = squeeze(nansum(nansum(JBz(:,yls:end-yln,zl,:).*mask(:,yls:end-yln,1,:))) ).*dx.*dy;
+% Dias = squeeze(nansum(nansum(JBz(:,yls:end-yln,zlt,:).*mask(:,yls:end-yln,zlt,:))) ).*dx.*dy;
 
 if withsides; Dias = Dias+squeeze(nansum(nansum(JBy(:,end-yln,:,:).*mask(:,end-yln,:,:))) - nansum(nansum(JBy(:,yls,:,:).*mask(:,yls,:,:)))).*dz.*dx; end;
 Diast = cumtrapz(Dias).*ts./vol;
-Diast = Diast - Diast(1);
+% Diast = Diast - Diast(1);
+
+FricsN = squeeze(nansum(nansum(JFzN(:,yls:end-yln,zlt,:).*mask(:,yls:end-yln,zlt,:))) - nansum(nansum(JFzN(:,yls:end-yln,end-zl+1,:).*mask(:,yls:end-yln,end-zl+1,:)))).*dx.*dy;
+FricstN = cumtrapz(FricsN).*ts./vol;
+DiasN = squeeze(nansum(nansum(JBzN(:,yls:end-yln,zlt,:).*mask(:,yls:end-yln,zlt,:))) - nansum(nansum(JBzN(:,yls:end-yln,end-zl+1,:).*mask(:,yls:end-yln,end-zl+1,:)))).*dx.*dy;
+DiastN = cumtrapz(DiasN).*ts./vol;
 
 %Alternate Flux Calc
 % JINT = cumtrapz(t, JFz, 4);
@@ -188,6 +242,7 @@ Qda = Qda - Qda(1);
 Qi = Q;
 Qi(~isfinite(Qi)) = 0;
 Qi = Qi.*mask;
+% Qi = Qi - repmat(Qi(:,:,:,1), [1 1 1 nt]);
 Qa = squeeze(nansum(nansum(nansum(Qi)))).*gridvol;
 Qt = gradient(Qa, ts);
 Qa = Qa-Qa(1);
@@ -219,9 +274,12 @@ plot(-Diast);
 plot(-(Fricst+Diast));
 
 plot(-(Frict+Diat));
+plot(-FricstN);
+plot(-DiastN);
+plot(-(FricstN+DiastN));
 % plot(-(Qa-Qda));
 hold off
-legend('Q','Q_{Direct}',  'Fric(0)', 'Dia(0)', 'Sum(0)', 'Sum(\nabla J)');
+legend('Q','Q_{Direct}',  'Fric(0)', 'Dia(0)', 'Sum(0)', 'Sum(\nabla J)', 'FricN', 'DiaN');
 xlabel('Num time steps (60 min)');
 ylabel('\Delta Q');
 grid on
@@ -232,37 +290,59 @@ grid on
 % scatter(Qa, -Fricst-Diast)
 %%
 % Make Time Series Figure of DeltaQ and Fluxes
-cl = [17 17.4];
+cl = [15.8 16.85];
+time = T(2:end-1)./86400; %in days
+fs = 16;
+xpos = 16;
+
 figure
 subplot(2,2,1:2)
-plot(Qa, 'LineWidth', 2)
+plot(time, Qa, 'LineWidth', 3)
 hold on
-plot(-Fricst); 
-plot(-Diast);
-plot(-(Fricst+Diast));
-plot(-(Frict + Diat));
+plot(time, -Fricst, 'LineWidth', 2); 
+plot(time, -Diast, 'LineWidth', 2);
+plot(time, -(Fricst+Diast), 'LineWidth',3, 'LineStyle', '--');
+% plot(-(Fricst+Diast+FricstN + DiastN))
+% plot(-(Frict + Diat));
 % plot(Qda+Advt);
 hold off
-legend('Q', 'Fric', 'Dia', 'Sum');
-xlabel('Num time steps (60 minutes)');
+legend('Q', '-J_F^z', '-J_B^z','Sum', 'Location', 'SouthWest');
+xlabel('Days');
 ylabel('\Delta Q');
 grid on
-title(num2str(isoT))
+title(['Surface B_0: ', num2str(squeeze(B0(1,1,1))),'    Temperature Range: ', num2str(isoT(1)),'-',num2str(isoT(2))])
+set(gca, 'FontSize', fs);
+
 subplot(2,2,3)
-pcolor(squeeze(THETA(:,:,1,tind)).'); shading interp
+contourf(X/1000, Y/1000, squeeze(THETA(:,:,1,tind)).'); shading interp
 set(gca, 'clim', cl)
-xlabel('x'); ylabel('y');
+xlabel('x (km)'); ylabel('y (km)');
 hold on
 contour(squeeze(THETA(:,:,1,tind)).', isoT, 'k')
-colorbar
+
+axis equal
+grid on
+set(gca, 'xlim', [0 X(end)/1000], 'ylim', [0 Y(end)/1000]);
+set(gca, 'FontSize', fs);
+yt = Y/1000;
+plot(xpos*ones(size(yt)), yt,'--k', 'LineWidth', 2)
+hold off
+title(['Day: ', num2str(time(tind), 2)])
+
 subplot(2,2,4)
-pcolor(squeeze(THETA(20,:,:,tind)).'); shading interp
+[c, h]=contourf(Y/1000, Z, squeeze(THETA(xpos,:,:,tind)).', 20); 
+% set(h, 'edgecolor', 'none');
 set(gca, 'clim', cl)
-xlabel('y'); ylabel('z');
+xlabel('y (km)'); ylabel('z (m)');
 hold on
-contour(squeeze(THETA(20,:,:,tind)).', isoT, 'k')
-set(gca, 'ydir', 'reverse')
-colorbar
+contour(Y/1000, Z, squeeze(THETA(xpos,:,:,tind)).', isoT, 'k')
+% set(gca, 'ydir', 'reverse')
+cb = colorbar;
+set(get(cb, 'ylabel'), 'string', 'T (\circ C)');
+set(gca, 'FontSize', fs);
+grid on
+
+set(gcf, 'Color', 'w', 'Position', [675   370   825   605]);
 
 
 
@@ -270,22 +350,39 @@ colorbar
 
 %%
 figure
-plot(smooth(Qt,1), 'LineWidth', 2)
+subplot(3,1,1)
+% pcolor(time, Y/1000, squeeze(THETA(xpos,:,1,:))); shading interp
+[c h] = contourf(time, Y/1000, squeeze(THETA(xpos,:,1,:)), 50); 
+set(h, 'edgecolor', 'none')
+
+ylabel('y (km)');
+xlabel('Days');
+% colorbar;
+grid on
+set(gca, 'FontSize', fs);
+
+subplot(3,1,2:3)
+
+plot(time, smooth(Qt,1), 'LineWidth', 2)
 hold on
-plot(-Frics, 'LineWidth', 2);
+plot(time, -Frics, 'LineWidth', 2);
 % plot(-Adv, 'LineWidth', 2);
-plot(-Dias, 'LineWidth', 2);
+plot(time, -Dias, 'LineWidth', 2);
 
 
-plot(-(Frics+Dias), 'LineWidth', 2, 'LineStyle', '--');
+plot(time,-(Frics+Dias), 'LineWidth', 2, 'LineStyle', '--');
 % plot(qdira);
 % plot(Qta, 'LineWidth', 2)
 
 hold off
-legend('dQ/dt', 'Fric', 'Dia', 'Sum', 'Qdir');
-xlabel('Num time steps (60 min)');
-ylabel('dQ/dt');
+legend('\partialQ/\partial t', 'Fric', 'Dia', 'Sum',  'Location', 'SouthEast');
+xlabel('Days');
+ylabel('\partialQ/\partial t');
 grid on
+set(gca, 'FontSize', fs);
+% cb = colorbar;
+% set(cb, 'visible', 'off')
+set(gcf, 'Color', 'w', 'Position', [675   445   830   530]);
 
 %%
 % Pointwise budget
@@ -324,7 +421,10 @@ plot(squeeze(nanmean(nanmean(nanmean(-DiaDiv,4),3))));
 hold off
 
 subplot(1,2,2)
-pcolor(squeeze(nanmean(nanmean(qt-divs,3))))
+pcolor(squeeze(nanmean(nanmean(qt-divs,3)))); shading interp
 hold on
 % pcolor(squeeze(nanmean(nanmean(divs,3))));
 hold off
+
+
+toc

@@ -1,4 +1,4 @@
-function [Q,Qdir, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz] = calcQBudgetD(diagfile, statefile, etanfile, sizes, slice, dx, dy )
+function [Q,Qdir, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz, JFzN, JBzN] = calcQBudgetD(diagfile, statefile, etanfile, sizes, slice, dx, dy )
 nx = sizes(1); ny = sizes(2); nt=sizes(3);
 sliceEta = {slice{1}, slice{2}, [1 1], slice{4}};
 TtoB = 9.81.*2e-4;
@@ -10,14 +10,18 @@ W = GetVar(statefile, diagfile, {'WVEL', '(1)'}, slice);
 ztmp = ncread(statefile, 'Z');
 metric = permute(repmat(ztmp, [1, nx, ny, nt]), [2 3 1 4]);
 zL = length(ztmp);
-
+disp('WARNING: ETAN terms unknown units');
 dpdx = GetVar(statefile,diagfile, {'Um_dPHdx','(1)'},slice);
-dEtadx = squeeze(GetVar(statefile, etanfile, {'ETAN','-9.81*(1)'},sliceEta));
+% dEtadx = squeeze(GetVar(statefile, etanfile, {'ETAN','-9.81*(1)'},sliceEta));
+dEtadx = squeeze(GetVar(statefile, etanfile, {'ETAN','-(1)/1035'},sliceEta));
+
 dEtadx = DPeriodic(dEtadx, dx,'x');
 dpdx = permute(repmat((dEtadx), [1, 1, 1, zL]), [1 2 4 3]) + dpdx;
 
 dpdy = GetVar(statefile,diagfile, {'Vm_dPHdy','(1)'},slice);
-dEtady = squeeze(GetVar(statefile, etanfile, {'ETAN','-9.81*(1)'},sliceEta));  
+% dEtady = squeeze(GetVar(statefile, etanfile, {'ETAN','-9.81*(1)'},sliceEta));  
+dEtady = squeeze(GetVar(statefile, etanfile, {'ETAN','-(1)/1035'},sliceEta));  
+
 dEtady = DPeriodic(dEtady, dy, 'y');
 % dEtady(:,end-1,:) = 0.5.*dEtady(:,end-2,:);
 dpdy = permute(repmat((dEtady), [1, 1, 1, zL]), [1 2 4 3]) + dpdy;
@@ -38,7 +42,7 @@ by = DPeriodic(b, dy, 'y');
 % by(:,end-1,:,:) = 0.5*by(:,end-2,:,:);
 % by(:,1,:,:) = 0.5.*by(:,2,:,:);
 bz = GetVar(statefile, diagfile, {'b', 'Dz(1)'}, slice);
-bz(:,:,end,:)= 0;
+% bz(:,:,end,:)= 0;
 %% 
 % Calculate Absolute vorticity terms
 % disp('Calculate Abs Vorticity Terms');
@@ -51,7 +55,7 @@ OMEGAX = GetVar(statefile, diagfile, {'VVEL', ' - Dz(1)'}, slice);
 OMEGAY = GetVar(statefile, diagfile, {'UVEL', 'Dz(1)'}, slice);
 
 % OMEGAZ = GetVar(statefile, diagfile, {'f_1e-4', 'VVEL', 'UVEL', '(1) + Dx(2) - Dy(3)'}, slice);
-V = GetVar(statefile, diagfile, {'VVEL', '(1)'}, slice);
+% V = GetVar(statefile, diagfile, {'VVEL', '(1)'}, slice);
 OMEGAZ = DPeriodic(V, dx,'x');
 % OMEGAZ = GetVar(statefile, diagfile, {'VVEL', 'Dx(1)'},slice);
 % Uy = Drv(dy, U, 'y');
@@ -64,7 +68,7 @@ Q = OMEGAX.*bx + OMEGAY.*by + OMEGAZ.*bz; %A more direct definition of Q.
 %%
 %Calculate Q from the momentum budget:
 advterms = true;
-directADV = true;
+directADV =true;
 diagOUT = false;
 LHSUt = GetVar(statefile, diagfile, {'TOTUTEND', '(1)/86400'}, slice);
 LHSVt = GetVar(statefile, diagfile, {'TOTVTEND', '(1)/86400'}, slice);
@@ -72,7 +76,7 @@ if advterms
     disp('Including Adv Terms in QDir');
 
     if ~directADV
-      VADVTERM = GetVar(statefile, 'extra.nc', { 'Vm_Advec', '(1)'}, slice);
+      VADVTERM = GetVar(statefile, diagfile', { 'Vm_Advec', '(1)'}, slice);
 %     VADVTERM = GetVar(statefile, diagfile, {'ADVx_Vm', 'ADVy_Vm', 'ADVrE_Vm', 'Vm_Cori', ['-Dx(1)/',divstrz, '-Dy(2)/', divstrz,'-Dz(3)/', divstrh,'+(4)']}, slice);
 %      VADVTERM = GetVar(statefile, diagfile, {'ADVx_Vm', 'ADVy_Vm', 'ADVrE_Vm',  ['-Dx(1)/',divstrz, '-Dy(2)/', divstrz,'-Dz(3)/', divstrh]}, slice);
 %     VADVTERM = GetVar(statefile, diagfile, {'Vm_Cori', '(1)'}, slice);
@@ -89,14 +93,14 @@ if advterms
         Vx = DPeriodic(V, dx, 'x');
 %         Vy = GetVar(statefile, diagfile, {'VVEL', 'Dy(1)'}, slice);
         Vy = DPeriodic(V, dy, 'y');
-        Vz = GetVar(statefile, diagfile, {'VVEL', 'Dz(1)'}, slice);
+        Vz = GetVar(statefile, diagfile, {'VVEL', 'Dz(1)'}, slice); % This needs to be fixed
         VADVTERM = -U.*Vx - V.*Vy - W.*Vz + Vm_Cori;
         end
     end
     %Notice I've removed the dpdy here and below...doesn't matter, perfect cancellation (numerics aside).
     LHSV = LHSVt - VADVTERM; - dpdy;
     if ~directADV
-    UADVTERM = GetVar(statefile, 'extra.nc', {'Um_Advec', '(1)'}, slice);
+    UADVTERM = GetVar(statefile, diagfile, {'Um_Advec', '(1)'}, slice);
 %      UADVTERM = GetVar(statefile, diagfile, {'ADVx_Um', 'ADVy_Um', 'ADVrE_Um', 'Um_Cori', ['-Dx(1)/',divstrz, '-Dy(2)/', divstrz,'-Dz(3)/', divstrh,'+(4)']}, slice);
 %      UADVTERM = GetVar(statefile, diagfile, {'ADVx_Um', 'ADVy_Um', 'ADVrE_Um', ['-Dx(1)/',divstrz, '-Dy(2)/', divstrz,'-Dz(3)/', divstrh]}, slice);
  %    UADVTERM = GetVar(statefile, diagfile, {'Um_Cori', '(1)'}, slice);
@@ -131,7 +135,8 @@ Qmom = -bx.*QVz + by.*QXz + bz.*(QVx - QXy);
 if advterms
     if ~directADV
     LHSb = TtoB.*GetVar(statefile, diagfile, {'TOTTTEND',  '(1)/86400'}, slice);
-    LHSb = LHSb - TtoB.*GetVar(statefile, 'extra.nc', {'UDIAG1', '(1)'}, slice);
+    BADV = TtoB.*GetVar(statefile, diagfile, {'UDIAG1', '(1)'}, slice);
+    LHSb = LHSb - BADV;
     else
     LHSb = TtoB.*GetVar(statefile, diagfile, {'TOTTTEND', '(1)/86400'}, slice);
         if diagOUT
@@ -166,50 +171,27 @@ JADVz = W.*Q;
 JADVy = V.*Q;
 %FRICTION TERMS
 Fx = LHSU;
-% if ~directADV
-%     Fx = LHSU;
-% %     Fx = GetVar(statefile, diagfile, {'TOTUTEND','Um_Advec', ' (1)/86400 - (2)'},slice);
-% %  Fx = GetVar(statefile, diagfile, {'TOTUTEND','Um_Advec','Um_Diss', ' (1)/86400 - (2)+(3)'},slice);
-% else
-%    Fx = GetVar(statefile, diagfile, {'TOTUTEND', ' (1)/86400 '},slice);
-%    UADVTERM = U.*Ux + V.*Uy + W.*Uz - Um_Cori;
-%    Fx = Fx + UADVTERM ;
-% end
 Fx = Fx - dpdx;
-% if ~directADV
-%     Fy = GetVar(statefile, diagfile, {'TOTVTEND', 'Vm_Advec', '(1)/86400 - (2)'}, slice);
-% % Fy = GetVar(statefile, diagfile, {'TOTVTEND', 'Vm_Advec','Vm_Diss', '(1)/86400 - (2)+(3)'}, slice);
-% else
-%    Fy = GetVar(statefile, diagfile, {'TOTVTEND', ' (1)/86400 '},slice);
-%    VADVTERM = U.*Vx + V.*Vy + W.*Vz - Vm_Cori;
-%    Fy = Fy + VADVTERM ;
-% end
+
+
 Fy = LHSV;
 Fy = Fy - dpdy;
 
 JFx = -bz.*Fy; JFy = bz.*Fx; JFz = bx.*Fy - by.*Fx;
 
+FxN =  GetVar(statefile, diagfile, { 'Um_Advec', '(1)'}, slice)-UADVTERM;
+FyN =  GetVar(statefile, diagfile, { 'Vm_Advec', '(1)'}, slice)-VADVTERM;
+
+JFzN = bx.*FyN - by.*FxN;
+
 %DIABATIC TERMS
 D = LHSb;
-% D =  TtoB*GetVar(statefile, diagfile, {'TOTTTEND', 'UDIAG1', '(1)/86400 - (2)'}, slice);
-%Using built in diags
-%  D =  TtoB*GetVar(statefile, diagfile, {'TOTTTEND', 'UDIAG1', '(1)/86400'}, slice);
-%Using the built in flux diagnostics
-% ADVx_TH = GetVar(statefile, diagfile, {'ADVx_TH', ['Dx(1)/',divstrz]}, slice);
-% ADVy_TH = GetVar(statefile, diagfile, {'ADVy_TH', ['Dy(1)/',divstrz]}, slice);
-% ADVr_TH = GetVar(statefile, diagfile, {'ADVr_TH', ['Dz(1)/',divstrh]}, slice);
-% ADV= -ADVx_TH-ADVy_TH-ADVr_TH;
-% D = D - TtoB.*ADV;
-
-%Hardcoding stuff for testing
-% DIFF = GetVar(statefile, diagfile, {'DFxE_TH', 'DFyE_TH','DFrI_TH', '-Dx(1)/2.5e3 - Dy(2)/2.5e3-Dz(3)/1e6'}, slice);
-% TFLUX = GetVar(statefile, etanfile, {'TFLUX', '(1)'}, {0, 0, [1 1], slice{4}});
-% Cw = 3994;		  
-% H = 2.5;
-% DIFF(:,:,1,:) = DIFF(:,:,1,:) + TFLUX./(1035*Cw*H);
-% D = TtoB.*(DIFF);
 
 JBx = -OMEGAX.*D; JBy = -OMEGAY.*D; JBz = -OMEGAZ.*D;
+
+DN = -TtoB.*GetVar(statefile, diagfile, {'UDIAG1', '(1)'}, slice)-BADV;
+
+JBzN = -OMEGAZ.*DN;
 %%
 
 end

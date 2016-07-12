@@ -1,13 +1,14 @@
 % nx = 96; ny = 192;
 % dz = 3;
 
-nx = 96; ny=96;
-dz = 4;
-% tslice = [200 350];
+nx = 1; ny=400;
+dz = 3;
+nz = 100;
+ tslice = [1 1300];
 slice={0, 0, 0, tslice};%100 120
-divstrh = '62500';
-divstrz = '1e3';
-kpp = false;
+divstrh = '250000';
+divstrz = '1500';
+kpp = true;
 TEND = NaN(nx, ny, nz, tslice(end)-tslice(1)+1);
 ADV = TEND;
 DIFF = TEND;
@@ -42,7 +43,7 @@ pcolor(squeeze(RES(:,:,ind)./tmean));
 colorbar
 
 %%
-indx = 25; indy = 45; indz = 1;
+indx = 1; indy = 45; indz = 1;
 
 figure
 plot(squeeze(TEND(indx, indy, indz,:)));

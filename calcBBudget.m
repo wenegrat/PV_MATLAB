@@ -10,7 +10,7 @@ ADV = GetVar(statefile, diagfile, {'UDIAG1', '(1)'}, slice);
 % ADV= -ADVx_TH-ADVy_TH - ADVr_TH;
 
 if kppflag
-    DIFF = GetVar(statefile, diagfile, {'KPPg_TH','DFrI_TH', ['-Dz(1)/',divstr, '-Dz(2)/', divstr]}, slice);
+    DIFF = GetVar(statefile, diagfile, {'KPPg_TH','DFrI_TH', ['-Dz(1)/',divstrh, '-Dz(2)/', divstrh]}, slice);
 else
     DIFF = GetVar(statefile, diagfile, {'DFxE_TH', 'DFyE_TH','DFrI_TH', ['-Dx(1)/',divstrz,'-Dy(2)/',divstrz,'-Dz(3)/', divstrh]}, slice);
 end
@@ -23,5 +23,5 @@ H = dz;
 TFLUXF = TFLUXF./(1035*Cw*H);
 DIFF = DIFF+TFLUXF;
 
-RES = TEND-ADV-DIFF;
+RES = TFLUXF;
 end
