@@ -28,7 +28,7 @@ contourf(X/1000, Y/1000, squeeze(THETA(:,:,1,tind)).'); shading interp
 set(gca, 'clim', cl)
 xlabel('x (km)'); ylabel('y (km)');
 hold on
-contour(squeeze(THETA(:,:,1,tind)).', isoT, 'k')
+contour(X/1000, Y/1000, squeeze(THETA(:,:,1,tind)).', isoT, 'k', 'LineWidth', 2)
 
 axis equal
 grid on
@@ -45,7 +45,7 @@ subplot(2,2,4)
 set(gca, 'clim', cl)
 xlabel('y (km)'); ylabel('z (m)');
 hold on
-contour(Y/1000, Z, squeeze(THETA(xpos,:,:,tind)).', isoT, 'k')
+contour(Y/1000, Z, squeeze(THETA(xpos,:,:,tind)).', isoT, 'k', 'LineWidth', 2)
 % set(gca, 'ydir', 'reverse')
 cb = colorbar;
 set(get(cb, 'ylabel'), 'string', 'T (\circ C)');

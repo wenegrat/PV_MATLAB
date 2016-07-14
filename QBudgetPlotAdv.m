@@ -11,13 +11,13 @@ figure
 subplot(2,2,1:2)
 plot(time, Qa, 'LineWidth', 3)
 hold on
-plot(time, -JFa, 'LineWidth', 2); 
-plot(time, -JBa, 'LineWidth', 2);
-plot(time, -JAa, 'LineWidth', 2);
-plot(time, -(JFa+JBa+JAa), 'LineWidth',3, 'LineStyle', '--');
+plot(time, -Fric, 'LineWidth', 2); 
+plot(time, -Dia, 'LineWidth', 2);
+plot(time, -Adv, 'LineWidth', 2);
+plot(time, -(Fric+Dia+Adv), 'LineWidth',3, 'LineStyle', '--');
 
 hold off
-legend('Q', '-J_F^z', '-J_B^z','-J_A^z','Sum', 'Location', 'SouthWest');
+legend('Q', '-J_F', '-J_B','-J_A','Sum', 'Location', 'SouthWest');
 xlabel('Days');
 ylabel('\Delta Q');
 grid on

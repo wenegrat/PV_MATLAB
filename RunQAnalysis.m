@@ -62,7 +62,7 @@ dQdtPlot;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ISOPYCNAL ANALYSIS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-isoT = [16.2 16.6];
+isoT = [16.1 16.5];
 mask = (THETA(:,:,:,:)>isoT(1)) & (THETA(:,:,:,:)<isoT(2));
 vol = gridvol.*squeeze(sum(sum(sum(mask))));
 
@@ -89,23 +89,27 @@ mask = zeros(nx, ny, nz, nt);
 depthind = 50;
 mask(:,:,1:depthind,:) = 1; %z > fixed depth
 
-deltaCrit = 0.01./(-2e-4*1035); % Convert to a delta T criteria.
-tprime = THETA - repmat(THETA(:,:,1,:), [1, 1, nz, 1]);
-mask = tprime>deltaCrit;
+% deltaCrit = 0.01./(-2e-4*1035); % Convert to a delta T criteria.
+% tprime = THETA - repmat(THETA(:,:,1,:), [1, 1, nz, 1]);
+% mask = tprime>deltaCrit;
 vol = gridvol.*squeeze(sum(sum(sum(mask))));
-%%
+% 
 %INTEGRATE Q
 IntegrateQTerms;
+% 
+% %Volume Integrals of J divergences
+% areaIntegrateJDiv;
 
 %AreaIntegrateJTerms
 [JFs, dJFdt] = areaIntegrateJVecs(squeeze(JFz(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
 [JFb, ~    ] = areaIntegrateJVecs(squeeze(JFz(:,:,depthind,:)), squeeze(mask(:,:,depthind,:)), dx*dy, ts, vol);
-JFa = JFs-JFb;
+Fric = JFs-JFb;
 [JBs, dJBdt] = areaIntegrateJVecs(squeeze(JBz(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
 [JBb, ~    ] = areaIntegrateJVecs(squeeze(JBz(:,:,depthind,:)), squeeze(mask(:,:,depthind,:)), dx*dy, ts, vol);
-JBa = JBs-JBb;
+Dia = JBs-JBb;
+[JAs, dJAdt] = areaIntegrateJVecs(squeeze(JAz(:,:,3,:)), squeeze(mask(:,:,3,:)), dx*dy, ts, vol);
 [JAb, ~    ] = areaIntegrateJVecs(squeeze(JAz(:,:,depthind,:)), squeeze(mask(:,:,depthind,:)), dx*dy, ts, vol);
-JAa = -JAb;
+Adv = JAs-JAb;
 
 %PLOT (QBudget, dQdt)
 titleString = ['Layer Analysis           Surface B_0: ', num2str(squeeze(B0(1,1,1)))];
@@ -113,5 +117,7 @@ QBudgetPlotAdv;
 % dQdtPlot;
 
 %%
+RiPlot;
 
+%%
 toc./60 % in minutes

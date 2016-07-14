@@ -1,13 +1,13 @@
 % nx = 96; ny = 192;
 % dz = 3;
 
-nx = 1; ny=400;
+nx = 80; ny=100;
 dz = 3;
 nz = 100;
  tslice = [1 1300];
 slice={0, 0, 0, tslice};%100 120
-divstrh = '250000';
-divstrz = '1500';
+divstrh = '122500';
+divstrz = '1050';
 kpp = true;
 TEND = NaN(nx, ny, nz, tslice(end)-tslice(1)+1);
 ADV = TEND;
@@ -25,7 +25,7 @@ for i = 1:(tslice(end)-tslice(1)+1);
     
    slicetemp = {slice{1}, slice{2}, slice{3}, [tslice(1)+i-1 tslice(1)+i-1]};
 
-    [TEND(:,:,:,i), ADV(:,:,:,i), DIFF(:,:,:,i), RES(:,:,:,i)] = calcBBudget(statefile, diagfile, etanfile, divstrh, divstrz,dz, slicetemp, kpp);
+    [TEND(:,:,:,i), ADV(:,:,:,i), DIFF(:,:,:,i), RES(:,:,:,i)] = calcBBudget(statefile, diagfile, etanfile,kppfile,extrafile, divstrh, divstrz,dz, slicetemp, kpp);
 %     TENDZ(:,:,:,i) = Drv(metric, squeeze(TEND(:,:,:,i)), 'z');
 %     ADVZ(:,:,:,i) = Drv(metric, squeeze(ADV(:,:,:,i)), 'z');
 %     DIFFZ(:,:,:,i) = Drv(metric, squeeze(DIFF(:,:,:,i)), 'z');

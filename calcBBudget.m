@@ -1,4 +1,4 @@
-function [TEND, ADV, DIFF, RES] = calcBBudget(statefile, diagfile, etanfile, divstrh, divstrz,dz, slice, kppflag)
+function [TEND, ADV, DIFF, RES] = calcBBudget(statefile, diagfile, etanfile, kppfile, extrafile,divstrh, divstrz,dz, slice, kppflag)
 TtoB = 9.81.*2e-4;
 TEND = GetVar(statefile, diagfile, {'TOTTTEND', '(1)/86400'}, slice);
 ADV = GetVar(statefile, diagfile, {'UDIAG1', '(1)'}, slice);
@@ -10,7 +10,8 @@ ADV = GetVar(statefile, diagfile, {'UDIAG1', '(1)'}, slice);
 % ADV= -ADVx_TH-ADVy_TH - ADVr_TH;
 
 if kppflag
-    DIFF = GetVar(statefile, diagfile, {'KPPg_TH','DFrI_TH', ['-Dz(1)/',divstrh, '-Dz(2)/', divstrh]}, slice);
+    DIFF = GetVar(statefile, kppfile, {'KPPg_TH', ['-Dz(1)/',divstrh]}, slice);
+    DIFF = DIFF+GetVar(statefile, extrafile, {'DFrI_TH', ['-Dz(1)/',divstrh]}, slice);
 else
     DIFF = GetVar(statefile, diagfile, {'DFxE_TH', 'DFyE_TH','DFrI_TH', ['-Dx(1)/',divstrz,'-Dy(2)/',divstrz,'-Dz(3)/', divstrh]}, slice);
 end
