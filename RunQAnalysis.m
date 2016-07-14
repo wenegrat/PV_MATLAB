@@ -6,10 +6,10 @@ tic;
 % PARAMETERS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc';
+statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc'; extrafile = 'extra.nc';
 TtoB = 9.81.*2e-4;
 
-B0 = ncread(etanfile, 'TFLUX');
+Q0 = ncread(etanfile, 'TFLUX');
 X = ncread(statefile, 'X');
 Y = ncread(statefile, 'Y');
 Z = ncread(statefile, 'Z');
@@ -55,7 +55,7 @@ JFa = JFs-JFb;
 JBa = JBs-JBb;
 
 %PLOT (QBudget, dQdt)
-titleString = ['Full Volume           Surface B_0: ', num2str(squeeze(B0(1,1,1)))];
+titleString = ['Full Volume           Surface B_0: ', num2str(squeeze(Q0(1,1,1)))];
 QBudgetPlot;
 dQdtPlot;
 %%
@@ -76,7 +76,7 @@ JFa = JFs;
 JBa = JBs;
 
 %PLOT (QBudget, dQdt)
-titleString = ['Iso Volume           Surface B_0: ', num2str(squeeze(B0(1,1,1)))];
+titleString = ['Iso Volume           Surface B_0: ', num2str(squeeze(Q0(1,1,1)))];
 QBudgetPlot;
 dQdtPlot;
 
@@ -112,10 +112,15 @@ Dia = JBs-JBb;
 Adv = JAs-JAb;
 
 %PLOT (QBudget, dQdt)
-titleString = ['Layer Analysis           Surface B_0: ', num2str(squeeze(B0(1,1,1)))];
+titleString = ['Layer Analysis           Surface B_0: ', num2str(squeeze(Q0(1,1,1)))];
 QBudgetPlotAdv;
 % dQdtPlot;
 
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Confirm Numerics and Horizontal Terms
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ConfirmNumHoriz;
 %%
 RiPlot;
 

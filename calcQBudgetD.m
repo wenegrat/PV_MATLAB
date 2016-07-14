@@ -1,4 +1,4 @@
-function [Q,Qdir, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz, JFzN, JBzN] = calcQBudgetD(diagfile, statefile, etanfile, sizes, slice, dx, dy )
+function [Q,Qdir, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz, JFzN, JBzN, JFzH] = calcQBudgetD(diagfile, statefile, etanfile,extrafile, sizes, slice, dx, dy,dz )
 nx = sizes(1); ny = sizes(2); nt=sizes(3);
 sliceEta = {slice{1}, slice{2}, [1 1], slice{4}};
 TtoB = 9.81.*2e-4;
@@ -179,6 +179,13 @@ Fy = Fy - dpdy;
 
 JFx = -bz.*Fy; JFy = bz.*Fx; JFz = bx.*Fy - by.*Fx;
 
+%Horizontal Friction Terms
+FxH = GetVar(statefile, extrafile, {'VISCx_Um', 'VISCy_Um', ['Dx(1)/',num2str(dy*dz),'+Dy(2)/',num2str(dx*dz)]}, slice);
+FyH = GetVar(statefile, extrafile, {'VISCx_Vm', 'VISCy_Vm', ['Dx(1)/',num2str(dy*dz),'+Dy(2)/',num2str(dx*dz)]}, slice);
+
+JFzH = bx.*FyH - by.*FxH;
+
+%Numeric Friction Terms
 FxN =  GetVar(statefile, diagfile, { 'Um_Advec', '(1)'}, slice)-UADVTERM;
 FyN =  GetVar(statefile, diagfile, { 'Vm_Advec', '(1)'}, slice)-VADVTERM;
 
