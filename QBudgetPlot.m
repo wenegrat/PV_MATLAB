@@ -7,7 +7,7 @@ cl = [15.8 16.85];
 fs = 16;
 xpos = 16;
 
-figure
+QBudgFig =figure;
 subplot(2,2,1:2)
 plot(time, Qa, 'LineWidth', 3)
 hold on
@@ -51,7 +51,7 @@ cb = colorbar;
 set(get(cb, 'ylabel'), 'string', 'T (\circ C)');
 set(gca, 'FontSize', fs);
 grid on
-
+set(gcf, 'Renderer', 'painters');
 set(gcf, 'Color', 'w', 'Position', [675   370   825   605]);
 
 

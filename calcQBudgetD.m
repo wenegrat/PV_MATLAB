@@ -1,5 +1,5 @@
-function [Q,Qdir, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz, JFzN, JBzN, JFzH] = calcQBudgetD(diagfile, statefile, etanfile,extrafile, sizes, slice, dx, dy,dz )
-nx = sizes(1); ny = sizes(2); nt=sizes(3);
+function [Q,Qdir, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz, JFzN, JBzN, JFzH, JBzH] = calcQBudgetD(diagfile, statefile, etanfile,extrafile, sizes, slice, dx, dy,dz )
+nx = sizes(1); ny = sizes(2); nz=sizes(3); nt=sizes(4);
 sliceEta = {slice{1}, slice{2}, [1 1], slice{4}};
 TtoB = 9.81.*2e-4;
 
@@ -8,6 +8,7 @@ V = GetVar(statefile, diagfile, {'VVEL', '(1)'}, slice);
 W = GetVar(statefile, diagfile, {'WVEL', '(1)'}, slice);
 % disp(slice{1}); disp(slice{2}); disp(slice{3}); disp(slice{4});
 ztmp = ncread(statefile, 'Z');
+ztmp = ztmp(1:nz);
 metric = permute(repmat(ztmp, [1, nx, ny, nt]), [2 3 1 4]);
 zL = length(ztmp);
 disp('WARNING: ETAN terms unknown units');
@@ -196,6 +197,11 @@ D = LHSb;
 
 JBx = -OMEGAX.*D; JBy = -OMEGAY.*D; JBz = -OMEGAZ.*D;
 
+% Horizontal Diabatic Terms
+DH = TtoB.*GetVar(statefile, extrafile, {'DFxE_TH', 'DFyE_TH', ['Dx(1)/',num2str(dy*dz),'+Dy(2)/',num2str(dx*dz)]}, slice);
+JBzH = -OMEGAZ.*DH;
+
+%Numeric Diabatic Terms
 DN = -TtoB.*GetVar(statefile, diagfile, {'UDIAG1', '(1)'}, slice)-BADV;
 
 JBzN = -OMEGAZ.*DN;

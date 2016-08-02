@@ -33,10 +33,47 @@ psib = ce.*abs(gradba).^2.*mlda.^2./f0;
 B0 = 9.81*2e-4*squeeze(Q0(1,1,1,1))./(1035*3994);
 
 %%
-figure
-
+% Make Buoyancy Flux Plot
+if ~exist('fhpsi');
+fhpsi = figure;
+else
+    figure(fhpsi);
+end
+hold on
 plot(time, psib./B0, 'LineWidth',2);
+hold off
 title('<w''b''>_{FK}/B_0');
+
+grid on
+xlabel('Days');
+set(gcf, 'Color','w');
+%%
+% Make MLD  PLOT
+if ~exist('fhmld');
+fhmld = figure;
+else
+    figure(fhmld);
+end
+hold on
+plot(time, mlda, 'LineWidth',2);
+hold off
+title('MLD');
+
+grid on
+xlabel('Days');
+set(gcf, 'Color','w');
+
+%%
+% Make Buoyancy Flux Plot
+if ~exist('fhgb');
+fhgb = figure;
+else
+    figure(fhgb);
+end
+hold on
+plot(time, gradba, 'LineWidth',2);
+hold off
+title('\nabla b');
 
 grid on
 xlabel('Days');

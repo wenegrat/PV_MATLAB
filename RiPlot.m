@@ -25,7 +25,7 @@ Rifull = bz.*(1e-4).^2./by.^2;
 ShRed = (bya./1e-4).^2 - 4*bza;
 
 %%
-figure
+RiPlotFig = figure;
 subplot(2,1,1)
 plot(time, (Ri), 'LineWidth', 2)
 set(gca, 'ylim', [-0 50], 'xlim', [0 25]) 

@@ -3,7 +3,7 @@
 % dQdt Plot
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-figure
+dQdtFig = figure;
 subplot(3,1,1)
 [c h] = contourf(time, Y/1000, squeeze(THETA(xpos,:,1,:)), 50); 
 set(h, 'edgecolor', 'none')

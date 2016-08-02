@@ -1,12 +1,17 @@
 %% RUN Q ANALYSIS
 clc; clear all; %close all;
 tic;
-
+set(0, 'DefaultFigureRenderer', 'painters');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % PARAMETERS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+currentDirectory = pwd;
+[upperPath, deepestFolder, ~] = fileparts(currentDirectory) ;
+IDString=deepestFolder;
+saveflag = 1;
 statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc'; extrafile = 'extra.nc';
+
+
 TtoB = 9.81.*2e-4;
 
 Q0 = ncread(etanfile, 'TFLUX');
@@ -58,6 +63,12 @@ JBa = JBs-JBb;
 titleString = ['Full Volume           Surface B_0: ', num2str(squeeze(Q0(1,1,1)))];
 QBudgetPlot;
 dQdtPlot;
+
+if (saveflag)
+    FigString = [IDString, '_FullVol'];
+    saveas(QBudgFig, ['QBudget_', FigString, '.png']);
+    saveas(dQdtFig, ['dQdt_', FigString, '.png']);
+end
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ISOPYCNAL ANALYSIS
@@ -80,6 +91,11 @@ titleString = ['Iso Volume           Surface B_0: ', num2str(squeeze(Q0(1,1,1)))
 QBudgetPlot;
 dQdtPlot;
 
+if (saveflag)
+    FigString = [IDString, '_ISO', num2str(isoT(1)),'-', num2str(isoT(2))];
+    saveas(QBudgFig, ['QBudget_', FigString, '.png']);
+    saveas(dQdtFig, ['dQdt_', FigString, '.png']);
+end
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % LAYER ANALYSIS
@@ -115,14 +131,25 @@ Adv = JAs-JAb;
 titleString = ['Layer Analysis           Surface B_0: ', num2str(squeeze(Q0(1,1,1)))];
 QBudgetPlotAdv;
 % dQdtPlot;
-
+if (saveflag)
+    FigString = [IDString, '_Layer_', num2str(isoT(2))];
+    saveas(QBudgAdvFig, ['QBudget_', FigString, '.png']);
+end
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Confirm Numerics and Horizontal Terms
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ConfirmNumHoriz;
+if (saveflag)
+    FigString = [IDString];
+    saveas(NumHorizFig, ['NumHorizTerms_', FigString, '.png']);
+end
+
 %%
 RiPlot;
-
+if (saveflag)
+    FigString = [IDString];
+    saveas(RiPlotFig, ['RiPlot_', FigString, '.png']);
+end
 %%
 toc./60 % in minutes

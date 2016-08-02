@@ -16,6 +16,7 @@ JAz = Q;
 JFzN = Q;
 JBzN = Q;
 JFzH = Q;
+JBzH = Q;
 mask = Q;
 FricDiv = Q;
 AdvDiv = Q;
@@ -73,8 +74,8 @@ parfor i=1:1:(tslice(end)-tslice(1)+1)
    slicetemp = {slice{1}, slice{2}, slice{3}, [tslice(1)+i-1 tslice(1)+i-1]};
    [Q(:,:,:,i), Qdir(:,:,:,i), JAx(:,:,:,i), JAy(:,:,:,i), JAz(:,:,:,i), ...
        JFx(:,:,:,i), JFy(:,:,:,i), JFz(:,:,:,i), JBx(:,:,:,i), JBy(:,:,:,i), JBz(:,:,:,i), ...
-       JFzN(:,:,:,i), JBzN(:,:,:,i), JFzH(:,:,:,i)] ...
-       = calcQBudgetD(diagfile, statefile, etanfile,extrafile, [nx, ny, 1], slicetemp, dx, dy,dz);
+       JFzN(:,:,:,i), JBzN(:,:,:,i), JFzH(:,:,:,i), JBzH(:,:,:,i)]...
+       = calcQBudgetD(diagfile, statefile, etanfile,extrafile, [nx, ny,nz, 1], slicetemp, dx, dy,dz);
 
    FricDiv(:,:,:,i) = DPeriodic(JFx(:,:,:,i), dx, 'x') + DPeriodic(JFy(:,:,:,i),dy, 'y') + Drv(metric, JFz(:,:,:,i), 'z');
    AdvDiv(:,:,:,i) = DPeriodic(JAx(:,:,:,i), dx, 'x') + DPeriodic(JAy(:,:,:,i),dy, 'y') + Drv(metric, JAz(:,:,:,i), 'z');

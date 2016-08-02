@@ -9,7 +9,7 @@ mask = ones(nx, ny, nz, tslice(end)-tslice(1)+1);
 vol = gridvol.*squeeze(sum(sum(sum(mask))));
 
 %INTEGRATE Q
-% IntegrateQTerms;
+IntegrateQTerms;
 
 %AreaIntegrateJTerms
 [JFs, dJFdt] = areaIntegrateJVecs(squeeze(JFz(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
@@ -25,6 +25,11 @@ JBa = JBs-JBb;
 [JFbH, ~    ] = areaIntegrateJVecs(squeeze(JFzH(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
 JFaH = JFsH-JFbH;
 
+[JBsH, dJBHdt] = areaIntegrateJVecs(squeeze(JBzH(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
+[JBbH, ~    ] = areaIntegrateJVecs(squeeze(JBzH(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
+JBaH = JBsH-JBbH;
+
+% AreaIntegrate Numeric Terms
 [JBsN, ~] = areaIntegrateJVecs(squeeze(JBzN(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
 [JBbN, ~    ] = areaIntegrateJVecs(squeeze(JBzN(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
 JBaN = JBsN-JBbN;
@@ -34,21 +39,22 @@ JBaN = JBsN-JBbN;
 JFaN = JFsN-JFbN;
 
 %%
-figure
-subplot(2,1,1)
+NumHorizFig = figure;
+subplot(3,1,1)
 plot(time, -JFa, 'LineWidth', 2);
 hold on
+plot(time, -JBa, 'LineWidth', 2);
 plot(time, -JFaH, 'LineWidth', 2);
-plot(time, -(JFa - JFaH), 'LineWidth', 2)
+plot(time, -JBaH, 'LineWidth', 2)
 hold off
 grid on
 xlabel('Days')
 ylabel('\Delta Q');
-legend('-J_F^z', '-J_{F-Horiz}^z', '-J_{F-Vert}^z');
+legend('-J_F^z', '-J_B^z', '-J_{F-Horiz}^z',  '-J_{B-Horiz}^z', 'Location', 'SouthWest');
 set(gca, 'FontSize', fs);
 set(gcf, 'Color', 'w');
 
-subplot(2,1,2)
+subplot(3,1,2)
 plot(time, -JFa, 'LineWidth', 2);
 hold on
 plot(time, -JBa, 'LineWidth', 2);
@@ -60,6 +66,17 @@ hold off
 grid on
 xlabel('Days')
 ylabel('\Delta Q');
-legend('-J_F^z','-J_B^z', '-J_{F-Num}^z', '-J_{B-Num}^z');
+legend('-J_F^z','-J_B^z', '-J_{F-Num}^z', '-J_{B-Num}^z', 'Location', 'SouthWest');
+set(gca, 'FontSize', fs);
+subplot(3,1,3)
+plot(time, Qa, 'LineWidth', 2);
+hold on
+plot(time, -(JFaN + JBaN + JFaH + JBaH), 'LineWidth', 2, 'LineStyle', '--')
+
+hold off
+grid on
+xlabel('Days')
+ylabel('\Delta Q');
+legend('\Delta Q', 'Sum(Horiz+Num)');
 set(gca, 'FontSize', fs);
 set(gcf, 'Color', 'w');

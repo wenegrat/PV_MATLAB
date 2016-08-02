@@ -7,7 +7,7 @@ cl = [15.8 16.85];
 fs = 16;
 xpos = 16;
 
-figure
+QBudgAdvFig=figure;
 subplot(2,2,1:2)
 plot(time, Qa, 'LineWidth', 3)
 hold on
