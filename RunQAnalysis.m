@@ -8,7 +8,7 @@ set(0, 'DefaultFigureRenderer', 'painters');
 currentDirectory = pwd;
 [upperPath, deepestFolder, ~] = fileparts(currentDirectory) ;
 IDString=deepestFolder;
-saveflag = 1;
+saveflag = 0;
 statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc'; extrafile = 'extra.nc';
 
 
