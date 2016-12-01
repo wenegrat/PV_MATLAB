@@ -1,12 +1,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Compare Theoretical Scalings
+% Generate Theoretical Scalings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % tslice = [1 1339];
-slice={0, 0, [1 5], tslice};
-sliceEta={0,0,[1 1],tslice};
-mask = ones(nx, ny, nz, tslice(end)-tslice(1)+1);
-vol = squeeze(sum(sum(sum(mask.*gridvol(:,:,1:nz,:)))));
+% slice={0, 0, [1 5], tslice};
+% sliceEta={0,0,[1 1],tslice};
+% mask = ones(nx, ny, nz, tslice(end)-tslice(1)+1);
+% vol = squeeze(sum(sum(sum(mask.*gridvol(:,:,1:nz,:)))));
 
 % Q0 = ncread(etanfile, 'TFLUX', slice);
 % Q0 = GetVar(statefile, etanfile, {'TFLUX', '(1)'}, sliceEta);
@@ -103,7 +103,7 @@ ce = 0.08;
 
 % Ek = .1*wstar./(f0*Hbl.^2);
 JBsurf = -f0.*B0./Hbl;
-JBeddy = 2*ce*gradb(:,:,2,:).^2.Hbl./f0;
+JBeddy = 2*ce*gradb(:,:,2,:).^2.*Hbl;
 
 % JBtotp = -f0.*(B0 - 2*ce.*mfk(:,:,:,:).^2.*Hbl.^2./f0)./Hbl; %Surf and <w'b'> Fox-Kemper corr = 0.92.
 % JBtotp = -f0.*(B0*0 - 2*ce.*mfk(:,:,:,:).^2.*Hbl.^2./f0)./Hbl; %Surf and <w'b'> Fox-Kemper corr = 0.92.
@@ -126,173 +126,3 @@ JBtotp = JBsurf + JBeddy;
 [~, Jbtotpa] = areaIntegrateJVecs(squeeze(JBtotp), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
 [~, Jbsurfa] = areaIntegrateJVecs(squeeze(JBsurf), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
 [~, Jbeddya] = areaIntegrateJVecs(squeeze(JBeddy), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
-
-% gammaFD = Jftota./Jbtota
-
-% JBsurf = -f0.*B0./Hbl;
-% JBeddy = -f0.*(ce.*magbgrad(:,:,2,:).^2.*Hbl.^2./f0)./Hbl;
-% JBsurfa = squeeze(nanmean(nanmean(JBsurf))).*vol;
-% JBeddya = squeeze(nanmean(nanmean(JBeddy))).*vol;
-
-%
-% %%
-% figure
-% plot(time, Jbtotpa);
-% hold on
-% plot(time, JBsurfa);
-% plot(time, JBeddya);
-% hold off
-% legend('Total', 'Surf', 'Eddy');
-%%
-% bt = TtoB.*GetVar(statefile,diagfile, {'TOTTTEND', '(1)/86400'},slice);
-% bta = squeeze(nanmean(nanmean(bt)));
-%%
-% %AreaIntegrateJTerms
-% slice={0, 0, [1 5], tslice};
-% sliceEta={0,0,[1 1],tslice};
-% nz = 5;
-% 
-% %CalculateQTerms; % Turn this on/off as needed to recalculate J terms
-%     
-% isoT = [0 100]; %Needed for plot below`
-% % mask = ones(nx, ny, nz, tslice(end)-tslice(1)+1);
-% % vol = gridvol.*squeeze(sum(sum(sum(mask))));
-% [JFs, dJFdt] = areaIntegrateJVecs(squeeze(JFz(:,:,2,:)), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
-% 
-% [JBs, dJBdt] = areaIntegrateJVecs(squeeze(JBz(:,:,2,:)), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
-% 
-% [JBhs, dJBhdt] = areaIntegrateJVecs(squeeze(JBzH(:,:,2,:)), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
-% [JBhs, dJBndt] = areaIntegrateJVecs(squeeze(JBzN(:,:,2,:)), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
-% [JBsz, dJBzdt] = areaIntegrateJVecs(squeeze(JBz(:,:,2,:) - JBzH(:,:,2,:) - JBzN(:,:,2,:)),squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
-
-
-%%
-% figure
-% plot(time, -dJBdt);
-% hold on
-% plot(time, -dJBhdt, '--');
-% plot(time, -dJBndt, '--');
-% plot(time, -dJBhdt-dJBndt, '--');
-% hold off
-% cr = num2str(corr(dJBdt(3:end), dJBhdt(3:end)+dJBndt(3:end)));
-% Bb = (regress(dJBdt, dJBhdt+dJBndt));
-% legend('J', 'Jh', 'Jn', 'Jh+Jn')
-% title(['Corr: ', cr, '  Regress Coeff: ', num2str(Bb)])% gammaDir = abs(dJFdt./dJBdt);
-%%
-figure
-subplot(3,1,1)
-% indj = 30; indk = 76;
-% plotyy(time, abs(squeeze(JFz(indj, indk, 2,:))), time, squeeze(JfTtot(indj, indk,:)));
-[ax, h1, h2] = plotyy(time, -dJFdt, time, -Jftota);
-set(h1, 'LineWidth', 2);
-set(h2, 'LineWidth', 2);
-grid on
-% title(num2str(corr(dJFdt, Jftota)))
-cr = num2str(corr(dJFdt, Jftota));
-Bf = (regress(dJFdt, Jftota));
-title(['Corr: ', cr, '  Regress Coeff: ', num2str(Bf)])
-
-subplot(3,1,2)
-jvar = dJBdt;
-[ax, h1, h2]=plotyy(time, -jvar, time, -Jbtotpa);
-set(h1, 'LineWidth', 2);
-set(h2, 'LineWidth', 2);
-% plot(time, -jvar);
-grid on
-hold on
-% plot(time, -2*Jbtotpa);
-% plot(time, Jbtotpa, '--');
-hold off
-cr = num2str(corr(jvar(3:end), Jbtotpa(3:end)));
-Bb = (regress(jvar, Jbtotpa));
-title(['Corr: ', cr, '  Regress Coeff: ', num2str(Bb)])
-
-subplot(3,1,3)
-% plotyy(time, abs(dJFdt./dJBdt), time, abs(Jftota./Jbtota));
-plot(time, (-dJFdt+dJBdt), 'LineWidth',2);
-hold on
-plot(time,(-Jftota*Bf+Jbtotpa*Bb), 'LineWidth', 2);
-hold off
-grid on
-% title(num2str(corr((Jftota + Jbtotpa.*Bb), (-dJFdt+dJBdt))))
-% set(gca, 'ylim', [0 10]);
-%%
-% if ~exist('fgammaFD');
-% fgammaFD = figure;
-% else
-%     figure(fgammaFD);
-% end
-% hold on
-% plot(time, gammaFD, 'LineWidth',2);
-% % plot(time, gammaDir, 'LineWidth',2 ,'LineStyle', '--');
-% hold off
-% title('\gamma_{FD}');
-% 
-% grid on
-% xlabel('Days');
-% set(gcf, 'Color','w');
-
-% %%
-% if ~exist('fkpphbl');
-% fkpphbl= figure;
-% else
-%     figure(fkpphbl);
-% end
-% hold on
-% plot(time, Hbla, 'LineWidth',2);
-% hold off
-% title('h_{BL}');
-% 
-% grid on
-% xlabel('Days');
-% set(gcf, 'Color','w');
-% 
-% 
-% if ~exist('fhgb');
-% fhgb = figure;
-% else
-%     figure(fhgb);
-% end
-% hold on
-% plot(time, gradbmed, 'LineWidth',2);
-% hold off
-% title('\nabla b');
-% 
-% grid on
-% xlabel('Days');
-% set(gcf, 'Color','w');
-% 
-% 
-% if ~exist('fhgvar');
-% fhgvar = figure;
-% else
-%     figure(fhgvar);
-% end
-% hold on
-% plot(time, gradbvar, 'LineWidth',2);
-% hold off
-% title('Var b');
-% 
-% grid on
-% xlabel('Days');
-% set(gcf, 'Color','w');
-
-%% EXTRA JUNK
-%%
-% Plot the 3 components of Diabatic term
-% figure
-% plot(squeeze(nanmean(nanmean(B0.*f0.*ones(size(Hbl))))));
-% hold on
-% plot(squeeze(nanmean(nanmean(f0.*(K(:,:,2,:).*bz(:,:,2,:))))));
-% plot(squeeze(nanmean(nanmean(f0.*TtoB.*ghat(:,:,2,:)))));
-% % plot(squeeze(nanmean(nanmean(f0.*(K(:,:,2,:).*bz(:,:,2,:))+ f0.*TtoB.*ghat(:,:,2,:)))),'--');
-% 
-% hold off
-% % Note that ghat and K term are highly correlated, both dependent on HBL
-% %%
-% scalen2 = squeeze(nanmean(nanmean(magbgrad(:,:,2,:).*Hbl.^2./f0)));
-% plotyy(1:599, squeeze(nanmean(nanmean(f0.*(K(:,:,2,:).*bz(:,:,2,:))))),1:599, f0.*0.06.*scalen2)
-% 
-% %%
-% plotyy(1:599, squeeze(nanmean(nanmean(K(:,:,2,:)))), 1:599, squeeze(nanmean(nanmean(Hbl.*abs(B0.*Hbl).^(1/3).*3))));
-% title(num2str(corr(squeeze(nanmean(nanmean(K(:,:,2,:)))), squeeze(nanmean(nanmean(Hbl.*abs(B0.*Hbl).^(1/3).*3))))))

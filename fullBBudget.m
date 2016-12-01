@@ -1,13 +1,13 @@
 % nx = 96; ny = 192;
 % dz = 3;
 
-nx = 80; ny=100;
+nx = 60; ny=100;
 dz = 3;
 nz = 100;
- tslice = [1 1300];
+ tslice = [1 299];
 slice={0, 0, 0, tslice};%100 120
-divstrh = '122500';
-divstrz = '1050';
+divstrh = num2str(dx*dy);
+divstrz = num2str(dx*dz);
 kpp = true;
 TEND = NaN(nx, ny, nz, tslice(end)-tslice(1)+1);
 ADV = TEND;
@@ -55,6 +55,14 @@ plot(squeeze(RHS(indx, indy, indz,:)), 'LineWidth', 2, 'LineStyle', '--');
 % plot(squeeze(abgt(indx, indy, indz,:)));
 hold off
 legend('TEND', 'ADV', 'DIFF', 'RES', 'RHS')
+
+%%
+plot(squeeze(nanmean(nanmean(nanmean(TEND(:,:,1:3,:))))));
+hold on
+plot(squeeze(nanmean(nanmean(nanmean(ADV(:,:,1:3,:))))));
+plot(squeeze(nanmean(nanmean(nanmean(DIFF(:,:,1:3,:))))));
+hold off
+legend('TEND', 'ADV','DIFF');
 %%
 % plot(squeeze(TENDZ(indx, indy, indz,:)));
 % hold on

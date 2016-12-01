@@ -6,7 +6,7 @@
 
 isoT = [0 100]; %Needed for plot below
 mask = ones(nx, ny, nz, tslice(end)-tslice(1)+1);
-vol = gridvol.*squeeze(sum(sum(sum(mask))));
+vol = squeeze(sum(sum(sum(mask.*gridvol))));
 
 %INTEGRATE Q
 IntegrateQTerms;
@@ -14,29 +14,29 @@ IntegrateQTerms;
 %AreaIntegrateJTerms
 [JFs, dJFdt] = areaIntegrateJVecs(squeeze(JFz(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
 [JFb, ~    ] = areaIntegrateJVecs(squeeze(JFz(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
-JFa = JFs-JFb;
+JFa = JFs;-JFb;
 
 [JBs, dJBdt] = areaIntegrateJVecs(squeeze(JBz(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
 [JBb, ~    ] = areaIntegrateJVecs(squeeze(JBz(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
-JBa = JBs-JBb;
+JBa = JBs;-JBb;
 
 %AreaIntegrate Horizontal Terms
 [JFsH, dJFHdt] = areaIntegrateJVecs(squeeze(JFzH(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
 [JFbH, ~    ] = areaIntegrateJVecs(squeeze(JFzH(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
-JFaH = JFsH-JFbH;
+JFaH = JFsH;-JFbH;
 
 [JBsH, dJBHdt] = areaIntegrateJVecs(squeeze(JBzH(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
 [JBbH, ~    ] = areaIntegrateJVecs(squeeze(JBzH(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
-JBaH = JBsH-JBbH;
+JBaH = JBsH;-JBbH;
 
 % AreaIntegrate Numeric Terms
 [JBsN, ~] = areaIntegrateJVecs(squeeze(JBzN(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
 [JBbN, ~    ] = areaIntegrateJVecs(squeeze(JBzN(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
-JBaN = JBsN-JBbN;
+JBaN = JBsN;-JBbN;
 
 [JFsN, ~] = areaIntegrateJVecs(squeeze(JFzN(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
 [JFbN, ~    ] = areaIntegrateJVecs(squeeze(JFzN(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
-JFaN = JFsN-JFbN;
+JFaN = JFsN;-JFbN;
 
 %%
 NumHorizFig = figure;

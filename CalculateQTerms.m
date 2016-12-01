@@ -3,7 +3,7 @@
 % PREALLOCATE FOR SPEED
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Q = NaN(nx, ny, nz, tslice(end)-tslice(1)+1);
-Qdir = Q;
+% Qdir = Q;
 JBx = Q;
 JBy = Q;
 JBz = Q;
@@ -17,10 +17,10 @@ JFzN = Q;
 JBzN = Q;
 JFzH = Q;
 JBzH = Q;
-mask = Q;
-FricDiv = Q;
-AdvDiv = Q;
-DiaDiv = Q;
+% mask = Q;
+% FricDiv = Q;
+% AdvDiv = Q;
+% DiaDiv = Q;
 THETA  = NaN(nx, ny, nz, tslice(end)-tslice(1)+1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -67,21 +67,54 @@ THETA  = NaN(nx, ny, nz, tslice(end)-tslice(1)+1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MULTIPLE PROCESSOR (speed increase factor of 2)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+tic
 metric = permute(repmat(Z, [1, nx, ny, 1]), [2 3 1 4]);
-parfor i=1:1:(tslice(end)-tslice(1)+1)
+for i=1:1:(tslice(end)-tslice(1)+1)
     disp(num2str(i));
 
    slicetemp = {slice{1}, slice{2}, slice{3}, [tslice(1)+i-1 tslice(1)+i-1]};
-   [Q(:,:,:,i), Qdir(:,:,:,i), JAx(:,:,:,i), JAy(:,:,:,i), JAz(:,:,:,i), ...
+   [Q(:,:,:,i), JAx(:,:,:,i), JAy(:,:,:,i), JAz(:,:,:,i), ...
        JFx(:,:,:,i), JFy(:,:,:,i), JFz(:,:,:,i), JBx(:,:,:,i), JBy(:,:,:,i), JBz(:,:,:,i), ...
        JFzN(:,:,:,i), JBzN(:,:,:,i), JFzH(:,:,:,i), JBzH(:,:,:,i)]...
        = calcQBudgetD(diagfile, statefile, etanfile,extrafile, [nx, ny,nz, 1], slicetemp, dx, dy,dz);
 
-   FricDiv(:,:,:,i) = DPeriodic(JFx(:,:,:,i), dx, 'x') + DPeriodic(JFy(:,:,:,i),dy, 'y') + Drv(metric, JFz(:,:,:,i), 'z');
-   AdvDiv(:,:,:,i) = DPeriodic(JAx(:,:,:,i), dx, 'x') + DPeriodic(JAy(:,:,:,i),dy, 'y') + Drv(metric, JAz(:,:,:,i), 'z');
-   DiaDiv(:,:,:,i) = DPeriodic(JBx(:,:,:,i), dx, 'x') + DPeriodic(JBy(:,:,:,i),dy, 'y') + Drv(metric, JBz(:,:,:,i), 'z');
+%    FricDiv(:,:,:,i) = DPeriodic(JFx(:,:,:,i), dx, 'x') + DPeriodic(JFy(:,:,:,i),dy, 'y') + Drv(metric, JFz(:,:,:,i), 'z');
+%    AdvDiv(:,:,:,i) = DPeriodic(JAx(:,:,:,i), dx, 'x') + DPeriodic(JAy(:,:,:,i),dy, 'y') + Drv(metric, JAz(:,:,:,i), 'z');
+%    DiaDiv(:,:,:,i) = DPeriodic(JBx(:,:,:,i), dx, 'x') + DPeriodic(JBy(:,:,:,i),dy, 'y') + Drv(metric, JBz(:,:,:,i), 'z');
 
    THETA(:,:,:,i) = GetVar(statefile, diagfile, {'THETA', '(1)'}, slicetemp);
    
    
 end
+toc
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % MULTIPLE PROCESSOR DIVIDED
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+% tic
+% metric = permute(repmat(Z, [1, nx, ny, 1]), [2 3 1 4]);
+% 
+% nwork = 4;
+% parpool('local', nwork);
+% l = tslice(end)-tslice(1)+1;
+% li = floor(l./nwork);
+% 
+% parfor i=1:nwork;
+%     
+%     disp(num2str(i));
+%    timerange = [tslice(1)+i-1 tslice(1)+i-1+li];
+%    slicetemp = {slice{1}, slice{2}, slice{3}, timerange};
+%    [Q(:,:,:,[tslice(1)+i-1 tslice(1)+i-1+li]), Qdir(:,:,:,timerange), JAx(:,:,:,timerange), JAy(:,:,:,timerange), JAz(:,:,:,timerange), ...
+%        JFx(:,:,:,timerange), JFy(:,:,:,timerange), JFz(:,:,:,timerange), JBx(:,:,:,timerange), JBy(:,:,:,timerange), JBz(:,:,:,timerange), ...
+%        JFzN(:,:,:,i), JBzN(:,:,:,i), JFzH(:,:,:,i), JBzH(:,:,:,i)]...
+%        = calcQBudgetD(diagfile, statefile, etanfile,extrafile, [nx, ny,nz, 1], slicetemp, dx, dy,dz);
+% 
+% %    FricDiv(:,:,:,i) = DPeriodic(JFx(:,:,:,i), dx, 'x') + DPeriodic(JFy(:,:,:,i),dy, 'y') + Drv(metric, JFz(:,:,:,i), 'z');
+% %    AdvDiv(:,:,:,i) = DPeriodic(JAx(:,:,:,i), dx, 'x') + DPeriodic(JAy(:,:,:,i),dy, 'y') + Drv(metric, JAz(:,:,:,i), 'z');
+% %    DiaDiv(:,:,:,i) = DPeriodic(JBx(:,:,:,i), dx, 'x') + DPeriodic(JBy(:,:,:,i),dy, 'y') + Drv(metric, JBz(:,:,:,i), 'z');
+% 
+%    THETA(:,:,:,i) = GetVar(statefile, diagfile, {'THETA', '(1)'}, slicetemp);
+%    
+%    
+% end
+% toc

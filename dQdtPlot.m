@@ -7,6 +7,10 @@ dQdtFig = figure;
 subplot(3,1,1)
 [c h] = contourf(time, Y/1000, squeeze(THETA(xpos,:,1,:)), 50); 
 set(h, 'edgecolor', 'none')
+hold on
+contour(time, Y/1000, squeeze(THETA(xpos,:,1,:)), isoT, 'k', 'LineWidth', 2);
+hold off
+
 
 ylabel('y (km)');
 xlabel('Days');
@@ -21,6 +25,7 @@ plot(time, -dJBdt, 'LineWidth', 2);
 
 
 plot(time,-(dJFdt + dJBdt), 'LineWidth', 2, 'LineStyle', '--');
+plot(time, - dJBzdt)
 % plot(qdira);
 % plot(Qta, 'LineWidth', 2)
 
