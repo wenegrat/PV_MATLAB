@@ -32,10 +32,10 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ISOPYCNAL ANALYSIS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-isoT = [15.0 16.25]; [16.5 16.75];
-mask = (THETA(:,:,:,:)>isoT(1)) & (THETA(:,:,:,:)<isoT(2));
+isoT = [15 17];[16.3 16.6]; [16.5 16.75];
+mask = double((THETA(:,:,:,:)>isoT(1)) & (THETA(:,:,:,:)<isoT(2)));
 vol = squeeze(sum(sum(sum(mask.*gridvol))));
-
+ 
 %INTEGRATE Q
 IntegrateQTerms;
 
@@ -45,6 +45,9 @@ JFa = JFs;
 [JBs, dJBdt] = areaIntegrateJVecs(squeeze(JBz(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
 JBa = JBs;
 
+B0 = 9.81*2e-4.*(Q0(:,:,1,2:end))./(1035*3994);
+JBsurf = -f0.*B0./Hbl;
+[Jbst, ~] = areaIntegrateJVecs(squeeze(JBsurf), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
 %PLOT (QBudget, dQdt)
 titleString = ['Iso Volume           Surface B_0: ', num2str(squeeze(Q0(1,1,1)))];
 QBudgetPlot;
@@ -61,7 +64,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 isoT = [1 100];
 mask = zeros(nx, ny, nz, nt);
-depthind = 35;
+depthind = 39;
 mask(:,:,1:depthind,:) = 1; %z > fixed depth
 
 % deltaCrit = 0.01./(-2e-4*1035); % Convert to a delta T criteria.

@@ -25,7 +25,7 @@ plot(time, -dJBdt, 'LineWidth', 2);
 
 
 plot(time,-(dJFdt + dJBdt), 'LineWidth', 2, 'LineStyle', '--');
-plot(time, - dJBzdt)
+% plot(time, - dJBzdt)
 % plot(qdira);
 % plot(Qta, 'LineWidth', 2)
 

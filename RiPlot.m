@@ -4,9 +4,10 @@
 % 1) Plot of Ri
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Following Fox-Kemper Et al. 2008 definitions
+metric = permute(repmat(Z, [1, nx, ny, nt]), [2 3 1 4]);
 
-by = GetVar(statefile, diagfile, {'b', 'Dy(1)'}, slice);
-bz = GetVar(statefile, diagfile, {'b', 'Dz(1)'}, slice);
+by = TtoB.*DPeriodic(THETA, dy, 'y');
+bz = TtoB.*Drv(metric, THETA, 'z');
 
 %%
 [nx ny nz nt] = size(by);
@@ -14,6 +15,11 @@ bym = nanmedian(reshape(abs(by(:,:,2,:)), nx*ny, nt));
 bymm = repmat(bym, [nx 1 ny nz]);
 bymm = permute(bymm, [1 3 4 2]);
 %%
+
+masknan = Zfull(:,:,1:nz,:)>-repmat(Hbl, [1, 1, nz, 1]);
+
+masknan = double(masknan);
+masknan(masknan<1) = NaN;
 FrontalZoneMask = NaN(nx, ny, nz, nt);
 % FrontalZoneMask(:, [1:3 39:43 77:end], :, :) = 1; %Need to adjust this for a given domain.
 % FrontalZoneMask(:,:,1:40,:) = 1;
@@ -34,6 +40,10 @@ Rifull = bz.*(1e-4).^2./by.^2;
 ShRed = (bya./1e-4).^2 - 4*bza;
 
 %%
+Ls = 2*pi*150*bya./f0.^2.*sqrt((1+Ri)/(5/2));
+ts = sqrt(54/4)*sqrt(1+Ri)/f0/3600 % in hours;;
+%%
+fs = 20;
 RiPlotFig = figure;
 subplot(2,1,1)
 plot(time, (Ri), 'LineWidth', 2)

@@ -5,8 +5,8 @@
 % tslice = [1 1339];
 % slice={0, 0, [1 5], tslice};
 % sliceEta={0,0,[1 1],tslice};
-% mask = ones(nx, ny, nz, tslice(end)-tslice(1)+1);
-% vol = squeeze(sum(sum(sum(mask.*gridvol(:,:,1:nz,:)))));
+mask = ones(nx, ny, nz, tslice(end)-tslice(1)+1);
+vol = squeeze(sum(sum(sum(mask.*gridvol(:,:,1:nz,:)))));
 
 % Q0 = ncread(etanfile, 'TFLUX', slice);
 % Q0 = GetVar(statefile, etanfile, {'TFLUX', '(1)'}, sliceEta);
@@ -16,19 +16,20 @@ gradb = TtoB.*(DPeriodic(THETA, dx, 'x').^2 + DPeriodic(THETA, dy, 'y').^2).^(1/
 
 % ZETA = GetVar(statefile, extrafile, {'momVort3', '(1)'}, sliceEta);
 % ZETA = GetVar(statefile, diagfile, {'VVEL', 'UVEL', 'Dx(1)-Dy(2)'}, slice);
-
+%%
 Hbl = GetVar(statefile, etanfile, {'KPPhbl', '(1)'}, sliceEta);
 % ghat = GetVar(statefile, kppfile, {'KPPg_TH',['(1)/',num2str(dx*dy)]}, slice);
 % bx = GetVar(statefile, diagfile, {'b', 'Dx(1)'}, slice);
 % by = GetVar(statefile, diagfile, {'b', 'Dy(1)'}, slice);
 % bz = GetVar(statefile, diagfile, {'b', 'Dz(1)'}, slice);
-
+%%
+[nx, ny, nz, nt] = size(gradb);
 % magbgrad = bx.^2 + by.^2;
 % K = GetVar(statefile, kppfile, {'KPPdiffT', '(1)'}, slice);
 Zfull = permute(repmat(Z, [1,nx, ny, nt]), [2 3 1 4]);
 
 %%
-[nx, ny, nz, nt] = size(gradb);
+
 masknan = Zfull(:,:,1:nz,:)>-repmat(Hbl, [1, 1, nz, 1]);
 
 masknan = double(masknan);
@@ -69,8 +70,22 @@ wstar = (abs(B0)*Hbl).^(1/3);
 %Note that max(G) ~ 4/27 at sigma = 1/3
 % so max(G)*0.4 ~ 0.06
 Vttw = .061*wstar.*Vg./(f0.*Hbl);
-Jftot =- squeeze(f0*Vttw.*gradb(:,:,2,:));
+% Vttw = .1*wstar.*Vg./(f0*Hbl);
+Jfgeo =-squeeze(f0*Vttw.*gradb(:,:,2,:));
+
+ce = 0.08;
+Jfeddy = +squeeze(ce*gradb(:,:,2,:).^2.*Hbl);
+
+% INCLUDE EDDY TERMS?
+Jftot = Jfgeo + Jfeddy;
+
+% Jftot = -sqrt(0.03).*sqrt(Hbl.*wstar./f0).*gradb(:,:,2,:).^2;
+
 [~, Jftota] = areaIntegrateJVecs(squeeze(Jftot), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
+[~, Jfeddya] = areaIntegrateJVecs(squeeze(Jfeddy), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
+[~, Jfgeoa] = areaIntegrateJVecs(squeeze(Jfgeo), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
+
+
 %%
 % Spatially Averaged
 % Vg = squeeze(nanmean(nanmean(Hbl.*masknan(:,:,2,:)))).*squeeze(nanmean(nanmean(gradb(:,:,2,:).*masknan(:,:,2,:))))./f0;

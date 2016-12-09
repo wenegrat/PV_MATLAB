@@ -217,6 +217,12 @@ grid on
 % title(num2str(corr((Jftota + Jbtotpa.*Bb), (-dJFdt+dJBdt))))
 % set(gca, 'ylim', [0 10]);
 %%
+figure
+plot(time, Jbsurfa);
+hold on
+plot(time, Jbeddya);
+hold off
+legend('J_{D_{Surf}}', 'J_{D_{Eddy}}');
 % if ~exist('fgammaFD');
 % fgammaFD = figure;
 % else
