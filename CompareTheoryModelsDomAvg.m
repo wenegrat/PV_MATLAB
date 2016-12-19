@@ -7,7 +7,6 @@
 % foldernames(7,:) = 'GS_025_4F';%
 % foldernames(8,:) = 'GS_200_4F';
 
-%% FIRST LOAD ALL OUTPUT FLAT FILES
 foldernames(1,:) = 'GS_025_2F';
 foldernames(2,:) = 'GS_025_4F';
 foldernames(3,:) = 'GS_025_6F';
@@ -17,30 +16,32 @@ foldernames(6,:) = 'GS_100_6F';%
 foldernames(7,:) = 'GS_200_2F';%
 foldernames(8,:) = 'GS_200_4F';
 foldernames(9,:) = 'GS_200_6F';
-foldernames(10,:) = 'GS_025_1F';
-foldernames(11,:) = 'GS_100_1F';
 
 
-nr = 11;
+nr = 9;
 Jfm = NaN(nr, 1000);
 Jbm = Jfm; Jft = Jfm;  Jbt = Jfm;
 Jea = Jfm; Jga=Jfm;
 for i=1:nr;
     filename = ['./',foldernames(i,:),'/', foldernames(i,:),'_OutputsFlat.mat'];
     load(filename);
+    filename = ['./',foldernames(i,:),'/', foldernames(i,:),'_OutputsFlat_2.mat'];
+    load(filename);
     nt = length(output.dJf);
     Jfm(i,1:nt) = output.dJf;
     Jbm(i,1:nt) = output.dJb;
-    if i<=4 && i~=3 
-    Jft(i,1:nt) = output.dJfga + output.dJfea;
-    Jea(i,1:nt) = output.dJfea;
-    Jga(i,1:nt) = output.dJfga;
-    else
-            Jft(i,1:nt) = output.dJfga - output.dJfea;
-                Jea(i,1:nt) = -output.dJfea;
-                Jga(i,1:nt) = output.dJfga;
-    end
-    Jbt(i,1:nt) = output.dJbsa+output.dJbea;
+%     if i<=4 && i~=3
+%     Jft(i,1:nt) = output.dJfga + output.dJfea;
+%     Jea(i,1:nt) = output.dJfea;
+%     Jga(i,1:nt) = output.dJfga;
+%     else
+%             Jft(i,1:nt) = output.dJfga - output.dJfea;
+%                 Jea(i,1:nt) = -output.dJfea;
+%                 Jga(i,1:nt) = output.dJfga;
+%     end
+%     Jbt(i,1:nt) = output.dJbsa+output.dJbea;
+    Jea(i,1:nt) = output2.dJfdavg;
+    Jbt(i,1:nt) = output.dJbsa + output2.dJbdavg./ce.*0.06;
     
     cs = strsplit(foldernames(i,:), '_');
     legstring(i,:) = ['Q_o: -', cs{2}, ', M^2: (', cs{3},')^2'];
@@ -48,7 +49,7 @@ end
 
 %%
 [nruns nt] = size(Jfm);
-xl = [1e-6 1e-1];
+xl = [1e-5 1e-1];
 % H = 150; f0 = 1e-4;Q = 100; gradb = (3*f0).^2;
 % B = 9.81*2e-4*Q./(1035*3994);
 % Vg = H.*gradb./f0;
@@ -83,12 +84,7 @@ for i=1:nruns;
          mark = 's';
      end
 %     if i==4; set(gca, 'ColorOrderIndex', 5); end %Skip Purple
-
-    % Note that I am getting rid of the ce factors here, and using the
-    % regression coefficent found at end of this script. Better approach
-    % would be to save flat files with no ce coefficient, and then find the
-    % regression coefficient here before plotting.
-    scatter(abs(imresize(Jfm(i,:), meanfac)),0.2./ce.* abs(imresize(Jea(i,:), meanfac)),mark,  'filled', 'MarkerEdgeColor', 'k');
+    scatter(abs(imresize(Jfm(i,:), meanfac)),0.156./ce.* abs(imresize(Jea(i,:), meanfac)),mark,  'filled', 'MarkerEdgeColor', 'k');
 
 end
 %     s =scatter(Jfi, Jfi, 'x', 'LineWidth', 3);
@@ -100,12 +96,12 @@ plot(xt, 0.5*xt, '--k')
 set(gca, 'xlim', xl, 'ylim', xl);
 hold off
 mvec = reshape(Jfm, nruns*nt,1);
-tvec = reshape(Jft, nruns*nt, 1);
+tvec = reshape(Jea, nruns*nt, 1);
 mask = isfinite(mvec+tvec);
-cr = corr(mvec(mask), tvec(mask));
+cr = corr(abs(mvec(mask)),abs( tvec(mask)));
 title(['Frictional PV Flux,     Corr: ', num2str(cr,2)]);
 grid on
-xlabel('Model  $(m^3s^{-4})$'); ylabel('Scaling $(m^3s^{-4})$');
+xlabel('Model'); ylabel('Scaling');
 set(gca, 'FontSize', 16);
 subplot(1,2,2)
 hold on
@@ -148,7 +144,7 @@ mask = isfinite(mvec+tvec);
 cr = corr(mvec(mask), tvec(mask));
 title(['Diabatic PV Flux,     Corr: ', num2str(cr,2)]);
 grid on
-xlabel('Model $(m^3s^{-4})$'); ylabel('Scaling $(m^3s^{-4})$');
+xlabel('Model'); ylabel('Scaling');
 %legend(legstring(1,:), legstring(2,:),legstring(3,:),legstring(4,:), legstring(5,:), legstring(6,:),legstring(7,:),legstring(8,:), legstring(9,:), 'location', 'SouthEastOutside');
 
 % axis equal;
@@ -156,7 +152,7 @@ xlabel('Model $(m^3s^{-4})$'); ylabel('Scaling $(m^3s^{-4})$');
 set(gca, 'FontSize', 16);
 set(gcf, 'Color', 'w', 'Position', [  675         466        1203         508]);
 
-%% FIND BEST FIT COEFFICIENT
+%%
 mvec = reshape(Jfm, nruns*nt,1);
 evec = reshape(abs(Jea), nruns*nt, 1);
 gvec = reshape(abs(Jga), nruns*nt, 1);

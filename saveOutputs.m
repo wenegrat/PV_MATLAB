@@ -3,7 +3,7 @@ clear all; close all; clc;
 addpath('~/PV_MATLAB');
 addpath('~/PVINJECT_MATLAB/HelperFiles');
 
-savelarge = true;
+savelarge = false; %Flag to save the 4D volume of Q vars.
 %%
 RunQAnalysis;
 %%
@@ -24,11 +24,10 @@ JFa = JFs-JFb;
 [JBb, ~    ] = areaIntegrateJVecs(squeeze(JBz(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
 JBa = JBs-JBb;
 
-%%
-GenerateTheoryScalings;
+
 
 %%
-% Create Output File
+% Create Large Output File
 outputFull.Q = Q;
 outputFull.JFz = JFz;
 outputFull.JBz = JBz;
@@ -53,6 +52,9 @@ if savelarge
 FigString = [IDString, '_OutputsFull.mat'];
 save(FigString, 'outputFull', '-v7.3');
 end
+
+%%
+GenerateTheoryScalings;
 %%
 % FLAT VARIABLES
 output.Qa = Qa;

@@ -1,5 +1,6 @@
-slice = {0, 0, 0, [1 300]};
-statefile = 'state.nc'; diagfile = 'diag.nc';
+slice = {0, 0, 0, [1 359]};
+statefile = 'state.nc'; diagfile = 'diag.nc'; etanfile = 'etan.nc'; extrafile = 'extra.nc';
+kppfile = 'kppdiags.nc';
 X = ncread(statefile, 'X');
 Y = ncread(statefile, 'Y');
 Z = ncread(statefile, 'Z');
@@ -95,20 +96,23 @@ hold off
 
 
 %%
-ti = 60;
+ti = 40;
 xi = 20;
-cl = [-1 1].*1e-8;
-
+cl = [-1 1].*1e-9;
+ADVv = W.*bz;j
+ADVh = ADV - ADVv;
 subplot(1,4,1)
-pcolor(Y./1000, Z, squeeze(bt(xi,:,:,ti)).'); shading interp
+% pcolor(Y./1000, Z, squeeze(bt(xi,:,:,ti)).'); shading interp
+pcolor(Y./1000, Z, squeeze(ADVh(xi,:,:,ti)).'); shading interp
+
 set(gca, 'clim', cl);
 
 subplot(1,4,2)
-pcolor(Y./1000, Z, squeeze(ADV(xi,:,:,ti)).'); shading interp
+pcolor(Y./1000, Z, squeeze(ADVv(xi,:,:,ti)).'); shading interp
 set(gca, 'clim', cl);
 subplot(1,4,3)
 pcolor(Y./1000, Z, TtoB.*squeeze(DIFF(xi,:,:,ti)).'); shading interp
-% cl = get(gca, 'clim');
+cl = get(gca, 'clim');
 hold on
 contour(Y./1000, Z, squeeze(b(xi,:,:,ti)).', 20, 'k');
 quiver(Y./1000, Z, squeeze(V(xi, :,:,ti)).', 100*squeeze(W(xi,:,:,ti)).', 'k')
@@ -117,7 +121,7 @@ set(gca, 'clim', cl);
 
 subplot(1,4,4)
 pcolor(X./1000, Y./1000, TtoB.*squeeze(DIFF(:,:,2,ti)).'); shading interp
-% cl = get(gca, 'clim');
+ cl = get(gca, 'clim');
 hold on
 yt = get(gca, 'YTick');
 plot(X(xi)./1000.*ones(size(yt)), yt);

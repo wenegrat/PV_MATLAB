@@ -4,7 +4,7 @@ clear vals
 for i=1:length(hs)
 vals(i,:) = hs(i)^2.*0.04.*(gradbs).^2./(2*2*pi.*sind(38)./86400).*1035*3994./(9.81*2e-4);
 end
-conts = linspace(0, 500, 20);
+conts = linspace(0, 500, 50);
 [c, h] =contour(hs, gradbs, vals.', conts);
 set(gca, 'YScale', 'log')
 clabel(c)

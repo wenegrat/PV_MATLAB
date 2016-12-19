@@ -4,12 +4,14 @@ xslice = [0.25];
 yslice = [0.25];
 cl = [14 19];
 cl = [15.25 18.1];
-fs=14;
+fs=16;
 [x, y, z] = meshgrid(outputFull.X./1000, outputFull.Y./1000, outputFull.Z);
 np = 4;
 for i=1:np
     subplot(np/2,np/2,i)
 tpos  = 1 + (i-1).*floor(5*86400./(7200));
+ tpos  = 1 + (1).*floor(5*86400./(7200)) + (i-1).*floor(15*86400./7200);
+
 % if i==np
 %     tpos = 1 + floor(25*86400/7200);
 % end

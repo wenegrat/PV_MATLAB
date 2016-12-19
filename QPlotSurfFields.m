@@ -47,6 +47,7 @@ if i==3
 end
 end
 
+%%
 subplot(2,nf,(nf+1):(2*nf))
 plot(time, smooth(output.Qa,1), 'LineWidth', 2)
 hold on
@@ -60,7 +61,7 @@ plot(time, -output.Jba, 'LineWidth', 2);
 % plot(Qta, 'LineWidth', 2)
 
 hold off
-lgd = legend('\Delta q', '-\int_{t} J_F^z', '-\int_t J_D^z','-\int_t J_{D_{SURF}}', 'Location', 'NorthWest');
+% lgd = legend('\Delta q ', '-\int_{t} J_F^z', '-\int_t J_D^z','-\int_t J_{D_{SURF}}', 'Location', 'NorthWest');
 xlabel('Days');
 ylabel('$\Delta q$ $(s^{-3})$');
 grid on
@@ -68,8 +69,9 @@ set(gca, 'FontSize', fs);
 % cb = colorbar;
 % set(cb, 'visible', 'off')
 set(gcf, 'Color', 'w', 'Position', [ 670   440   660   532]);
-set(cb , 'Position', [.92 .588 0.02 0.335])
 set(gca, 'xlim', [0 time(end)])
+set(cb , 'Position', [.92 .588 0.02 0.335])
+
 
 
 
