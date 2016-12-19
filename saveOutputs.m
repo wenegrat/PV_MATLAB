@@ -1,5 +1,9 @@
 %%
 clear all; close all; clc;
+addpath('~/PV_MATLAB');
+addpath('~/PVINJECT_MATLAB/HelperFiles');
+
+savelarge = false; %Flag to save the 4D volume of Q vars.
 %%
 RunQAnalysis;
 %%
@@ -20,11 +24,10 @@ JFa = JFs-JFb;
 [JBb, ~    ] = areaIntegrateJVecs(squeeze(JBz(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
 JBa = JBs-JBb;
 
-%%
-GenerateTheoryScalings;
+
 
 %%
-% Create Output File
+% Create Large Output File
 outputFull.Q = Q;
 outputFull.JFz = JFz;
 outputFull.JBz = JBz;
@@ -35,10 +38,24 @@ outputFull.JFzn= JFzN;
 outputFull.JBzn= JBzN;
 outputFull.JFzh= JFzH;
 outputFull.JBzh = JBzH;
-
+outputFull.T = THETA;
+outputFull.time = time;
+outputFull.X = X;
+outputFull.Y = Y;
+outputFull.Z = Z;
+outputFull.gridvol = gridvol;
+outputFull.ts = ts;
+outputFull.dx = dx;
+outputFull.dy = dy;
+%%
+if savelarge
 FigString = [IDString, '_OutputsFull.mat'];
 save(FigString, 'outputFull', '-v7.3');
+end
 
+%%
+GenerateTheoryScalings;
+%%
 % FLAT VARIABLES
 output.Qa = Qa;
 output.Qt = Qt;
@@ -50,6 +67,8 @@ output.dJfa_t = Jftota;
 output.dJba_t = Jbtotpa;
 output.dJbsa = Jbsurfa;
 output.dJbea = Jbeddya;
+output.dJfea = Jfeddya;
+output.dJfga = Jfgeoa;
 output.Tsurf = squeeze(THETA(:,:,1,:));
 output.Q = Q0(1,1,1,1);
 output.time = time;
