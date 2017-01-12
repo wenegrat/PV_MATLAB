@@ -69,7 +69,7 @@ try
 catch exception
     if (strcmp(exception.identifier,['MATLAB:imagesci:netcdf:' ...
                             'libraryFailure']))
-        str = 'temp_time';
+        str = 'time'; %Was temp_time, JOW 1/10/16
 [tmp,tLhis] = netcdf.inqDim(ncid,netcdf.inqDimID(ncid,str));
     end
 end
@@ -818,8 +818,14 @@ function [hgrdnum,vgrdnum,NDimensions] = grd_var(ncid,varname)
         
 %Determine horizontal grid type:
     [dnh,tmp] = netcdf.inqDim(ncid,Dids(1));
+    [dnh2,tmp] = netcdf.inqDim(ncid,Dids(2));
+
     if (dnh(end) == 'o')
+        if (dnh2(end) == 'v')
+            hgrdnum = 3;
+        else
         hgrdnum = 1;
+        end
     elseif (dnh(end) == 'u')
         hgrdnum = 2;
     elseif (dnh(end) == 'v')
