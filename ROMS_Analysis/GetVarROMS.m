@@ -1,4 +1,4 @@
-function [var] = GetVar(hname,dname,VarOp,slice);
+function [var] = GetVarROMS(hname,dname,VarOp,slice, varargin);
 %---------------------------------------------------------------------
 %---------------------------------------------------------------------
 %
@@ -38,6 +38,12 @@ function [var] = GetVar(hname,dname,VarOp,slice);
 %---------------------------------------------------------------------
 %---------------------------------------------------------------------
 %--------------Get file information-----------------------------------
+if (nargin == 5)
+        intFlag = varargin{1};
+else
+    intFlag = 1;
+end
+
 ncid = netcdf.open(hname,'NC_NOWRITE');
 if (strfind(hname,'avg'))
     avgfile = logical(1);
@@ -359,9 +365,13 @@ for i=1:(length(VarOp)-1)
         end
         end
         %Otherwise interpolate variable:
+        if (intFlag)
         GetVarStr = strrep(GetVarStr,['(' num2str(i) ')'], ['Int(' ...
                             GetVar ',[' num2str(hgrd) ' ' num2str(vgrd) ...
                             '],[1 1])']);
+        else
+        GetVarStr = strrep(GetVarStr,['(' num2str(i) ')'], GetVar);
+        end
     end
 end
     %pm, pn and z_rho are easy to deal with:

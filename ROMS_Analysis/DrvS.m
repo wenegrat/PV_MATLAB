@@ -1,10 +1,10 @@
-function OUT = DrvS(metric,zmetric, Field,TYPE)
+function OUT = DrvS(metric,zmetric, Field,TYPE, varargin)
 if (TYPE == 'z') 
-    OUT = DrvROMS(metric, Field, TYPE);
+    OUT = DrvROMS(metric, Field, TYPE, varargin{:});
 else
-    dFdx = DrvROMS(metric, Field, TYPE);
-    dZdx = DrvROMS(metric, zmetric, TYPE);
-    dFdz = DrvROMS(zmetric, Field, 'z');
+    dFdx = DrvROMS(metric, Field, TYPE, varargin{:});
+    dZdx = DrvROMS(metric, zmetric, TYPE, 1);
+    dFdz = DrvROMS(zmetric, Field, 'z', varargin{:});
     OUT = dFdx - dFdz.*dZdx;
 end
 
