@@ -28,6 +28,7 @@ JBa = JBs-JBb;
 
 %%
 % Create Large Output File
+if savelarge
 outputFull.Q = Q;
 outputFull.JFz = JFz;
 outputFull.JBz = JBz;
@@ -47,24 +48,26 @@ outputFull.gridvol = gridvol;
 outputFull.ts = ts;
 outputFull.dx = dx;
 outputFull.dy = dy;
-%%
-if savelarge
+
+
 FigString = [IDString, '_OutputsFull.mat'];
 save(FigString, 'outputFull', '-v7.3');
 end
 
 %%
 GenerateTheoryScalings;
-%%
-% FLAT VARIABLES
+%% FLAT VARIABLES
+% Modeled Fields
 output.Qa = Qa;
 output.Qt = Qt;
 output.dJf = dJFdt;
 output.dJb = dJBdt;
 output.Jfa = JFa;
 output.Jba = JBa;
-output.dJfa_t = Jftota;
-output.dJba_t = Jbtotpa;
+% output.dJfa_t = Jftota;
+% output.dJba_t = Jbtotpa;
+
+% Scaling Fields
 output.dJbsa = Jbsurfa;
 output.dJbea = Jbeddya;
 output.dJfea = Jfeddya;

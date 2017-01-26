@@ -8,6 +8,8 @@
 % foldernames(8,:) = 'GS_200_4F';
 
 %% FIRST LOAD ALL OUTPUT FLAT FILES
+clear foldernames
+
 foldernames(1,:) = 'GS_025_2F';
 foldernames(2,:) = 'GS_025_4F';
 foldernames(3,:) = 'GS_025_6F';
@@ -22,9 +24,15 @@ foldernames(11,:) = 'GS_100_1F';
 
 
 nr = 11;
+clear foldernames
+foldernames(1,:) = 'GS_100_4F_LEK';
+nr = 1;
+
 Jfm = NaN(nr, 1000);
 Jbm = Jfm; Jft = Jfm;  Jbt = Jfm;
 Jea = Jfm; Jga=Jfm;
+Jbs = Jfm;
+Jbe = Jfm;
 for i=1:nr;
     filename = ['./',foldernames(i,:),'/', foldernames(i,:),'_OutputsFlat.mat'];
     load(filename);
@@ -41,7 +49,8 @@ for i=1:nr;
                 Jga(i,1:nt) = output.dJfga;
     end
     Jbt(i,1:nt) = output.dJbsa+output.dJbea;
-    
+    Jbs(i,1:nt) = output.dJbsa;
+    Jbe(i,1:nt) = output.dJbea;
     cs = strsplit(foldernames(i,:), '_');
     legstring(i,:) = ['Q_o: -', cs{2}, ', M^2: (', cs{3},')^2'];
 end
@@ -57,7 +66,7 @@ xl = [1e-6 1e-1];
 % Jfi = f0*Vttw*gradb*dx*dy*nx*ny;
 
 meanfac = 1/12;
-
+meanfac =1;
 figure
 subplot(1,2,1)
 hold on
@@ -160,6 +169,12 @@ set(gcf, 'Color', 'w', 'Position', [  675         466        1203         508]);
 mvec = reshape(Jfm, nruns*nt,1);
 evec = reshape(abs(Jea), nruns*nt, 1);
 gvec = reshape(abs(Jga), nruns*nt, 1);
-mask = isfinite(mvec)
-regress(mvec(mask), evec(mask)./ce)
+mask = isfinite(mvec);
+r = regress(mvec(mask), evec(mask)./ce);
+disp(['Best fit Frictional Coefficient: ', num2str(r)]);
+mvec = reshape(Jbm-Jbs, nruns*nt,1);
+svec = reshape(abs(Jbe), nruns*nt, 1);
+mask = isfinite(mvec);
+r = regress(mvec(mask), evec(mask)./(2*ce));
+disp(['Best fit Diabatic Coefficient: ', num2str(r)]);
 

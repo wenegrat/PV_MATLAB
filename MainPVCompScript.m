@@ -7,6 +7,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Note that plots assume each new model run has had 
 % saveOutputs.m run on it already.
+% Run by using:
+% matlab -nojvm < ~/PV_MATLAB/saveOutputs.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 saveOutputs.m
 
@@ -44,3 +46,7 @@ CompTheoryModelsLegend.m % Made the legend separately because of export issues
 QBudgetPlotSPINDOWN.m
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ROMS ANALYSIS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+RomsAnalysis.m

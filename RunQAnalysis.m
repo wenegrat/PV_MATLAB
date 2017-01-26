@@ -27,7 +27,7 @@ dx = X(2)-X(1)
 dy = Y(2)-Y(1)
 dz = Z(1)-Z(2) %surface only, XX-should track this through the code to ensure correct.
 ts = T(2)-T(1)
-% ts = 3600
+
 dh = diff([Zl; -300]);
 
 tslice = [1 length(T)-1];
