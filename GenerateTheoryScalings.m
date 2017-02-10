@@ -21,7 +21,7 @@ masknan(masknan<1) = NaN;
 % bymm = repmat(bym, [nx 1 ny nz]);
 % bymm = permute(bymm, [1 3 4 2]);
 % fzonemask = abs(by) > 1.1.*bymm;
-% masknan = masknan.*fzonemask;
+% masknan = masknan.*fzonemask;hahahah
 
 
 gradba = sqrt(squeeze(nanmean(nanmean(nanmean((gradb.^2).*masknan)))));
@@ -39,8 +39,8 @@ wstar = (abs(B0)*Hbl).^(1/3);
 Vttw = .061*wstar.*Vg./(f0.*Hbl);
 Jfgeo =-squeeze(f0*Vttw.*gradb(:,:,2,:));
 
-ce = 0; 0.08; % Set to zero, find best fit later.
-Jfeddy = +squeeze(ce*gradb(:,:,2,:).^2.*Hbl);
+% ce = 0; 0.08; % Set to zero, find best fit later.
+Jfeddy = +squeeze(gradb(:,:,2,:).^2.*Hbl);
 
 % INCLUDE EDDY TERMS?
 % Jftot = Jfgeo + Jfeddy;
@@ -57,8 +57,8 @@ Jfeddy = +squeeze(ce*gradb(:,:,2,:).^2.*Hbl);
 %% DOMAIN AVERAGED FRICTIONAL SCALINGS
 % These are useful for showing that the relationship holds even for 'mean'
 % values.
-ce = 0; 0.08;
-Jfeddy = +squeeze(ce*nanmean(nanmean(gradb(:,:,2,:).^2)).*nanmean(nanmean(Hbl)));
+% ce = 0; 0.08;
+Jfeddy = +squeeze(nanmean(nanmean(gradb(:,:,2,:).^2)).*nanmean(nanmean(Hbl)));
 
 Jfdavg = squeeze(Jfeddy).*nx.*ny.*dx.*dy;
 
@@ -66,9 +66,9 @@ Jbdavg = Jfdavg; %Both terms have same scaling, and surf buoyancy flux only depe
 
 %% BUOYANCY THEORY SCALINGS
 
-ce =0; 0.08;
+% ce =0; 0.08;
 JBsurf = -f0.*B0./Hbl;
-JBeddy = 2*ce*gradb(:,:,2,:).^2.*Hbl;
+JBeddy = gradb(:,:,2,:).^2.*Hbl;
 % JBtotp = JBsurf + 0JBeddy;
 
 

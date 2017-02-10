@@ -774,8 +774,12 @@ elseif (Vdims == 4)
         dstr = '[xi-1 yi-1 zi-1 ti-1],[xL yL ?? tL]';
       case 2 % u
         dstr = '[xi-1 yi-1 zi-1 ti-1],[xL-1 yL ?? tL]';
+        dstr = '[xi yi-1 zi-1 ti-1],[xL-1 yL ?? tL]';
+
       case 3 % v
         dstr = '[xi-1 yi-1 zi-1 ti-1],[xL yL-1 ?? tL]';
+        dstr = '[xi-1 yi zi-1 ti-1],[xL yL-1 ?? tL]';
+
       case 4 % psi
         dstr = '[xi-1 yi-1 zi-1 ti-1],[xL-1 yL-1 ?? tL]';
     end

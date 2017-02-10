@@ -49,13 +49,13 @@ end
 
 %%
 subplot(2,nf,(nf+1):(2*nf))
-plot(time, smooth(output.Qa,1), 'LineWidth', 2)
+plot(output.time, smooth(output.Qa,1), 'LineWidth', 2)
 hold on
-plot(time, -output.Jfa   , 'LineWidth', 2);
-plot(time, -output.Jba, 'LineWidth', 2);
+plot(output.time, -output.Jfa   , 'LineWidth', 2);
+plot(output.time, -output.Jba, 'LineWidth', 2);
 
 
-% plot(time,-(dJFdt + dJBdt), 'LineWidth', 2, 'LineStyle', '--');
+plot(output.time,-(output.Jfa+ output.Jba), 'LineWidth', 2, 'LineStyle', '--');
 % plot(time, - dJBzdt)
 % plot(qdira);
 % plot(Qta, 'LineWidth', 2)

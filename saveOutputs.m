@@ -3,7 +3,7 @@ clear all; close all; clc;
 addpath('~/PV_MATLAB');
 addpath('~/PVINJECT_MATLAB/HelperFiles');
 
-savelarge = false; %Flag to save the 4D volume of Q vars.
+savelarge = true; %Flag to save the 4D volume of Q vars.
 %%
 RunQAnalysis;
 %%

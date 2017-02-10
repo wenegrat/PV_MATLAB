@@ -12,6 +12,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 saveOutputs.m
 
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Verification Plots
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+currentDirectory = pwd;
+[upperPath, deepestFolder, ~] = fileparts(currentDirectory) ;
+IDString=deepestFolder;
+load([IDString, '_OutputsFlat.mat']);
+BasicVerificationPlots.m
+
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ARGO Climatology
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,6 +54,8 @@ CompTheoryModelsLegend.m % Made the legend separately because of export issues
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Spindown PV Example
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+load('GS_SPIN_4F_OutputsFull.mat');
+THETA = GetVar(statefile, diagfile, {'THETA','(1)'}, slice);
 QBudgetPlotSPINDOWN.m
 
 

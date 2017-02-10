@@ -9,24 +9,26 @@
 
 %% FIRST LOAD ALL OUTPUT FLAT FILES
 clear foldernames
+foldernames(1,:) = 'GS_025_1F';
+foldernames(2,:) = 'GS_025_2F';
+foldernames(3,:) = 'GS_025_4F';
+foldernames(4,:) = 'GS_025_6F';
+foldernames(5,:) = 'GS_100_1F';%
+foldernames(6,:) = 'GS_100_2F';%
+foldernames(7,:) = 'GS_100_4F';%
+foldernames(8,:) = 'GS_100_6F';%
+foldernames(9,:) = 'GS_200_1F';%
+foldernames(10,:) = 'GS_200_2F';%
+foldernames(11,:) = 'GS_200_4F';
+foldernames(12,:) = 'GS_200_6F';
+% foldernames(10,:) = 'GS_025_1F';
+% foldernames(11,:) = 'GS_100_1F';
 
-foldernames(1,:) = 'GS_025_2F';
-foldernames(2,:) = 'GS_025_4F';
-foldernames(3,:) = 'GS_025_6F';
-foldernames(4,:) = 'GS_100_2F';
-foldernames(5,:) = 'GS_100_4F';%
-foldernames(6,:) = 'GS_100_6F';%
-foldernames(7,:) = 'GS_200_2F';%
-foldernames(8,:) = 'GS_200_4F';
-foldernames(9,:) = 'GS_200_6F';
-foldernames(10,:) = 'GS_025_1F';
-foldernames(11,:) = 'GS_100_1F';
+[nr, ~] = size(foldernames);
 
-
-nr = 11;
-clear foldernames
-foldernames(1,:) = 'GS_100_4F_LEK';
-nr = 1;
+% clear foldernames
+% foldernames(1,:) = 'GS_100_4F_LEK';
+% nr = 1;
 
 Jfm = NaN(nr, 1000);
 Jbm = Jfm; Jft = Jfm;  Jbt = Jfm;
@@ -39,22 +41,30 @@ for i=1:nr;
     nt = length(output.dJf);
     Jfm(i,1:nt) = output.dJf;
     Jbm(i,1:nt) = output.dJb;
-    if i<=4 && i~=3 
-    Jft(i,1:nt) = output.dJfga + output.dJfea;
-    Jea(i,1:nt) = output.dJfea;
-    Jga(i,1:nt) = output.dJfga;
-    else
-            Jft(i,1:nt) = output.dJfga - output.dJfea;
-                Jea(i,1:nt) = -output.dJfea;
-                Jga(i,1:nt) = output.dJfga;
-    end
-    Jbt(i,1:nt) = output.dJbsa+output.dJbea;
+
+    Jft(i,1:nt) = output.dJfea;
+%     Jea(i,1:nt) = -output.dJfea;
+%     Jga(i,1:nt) = output.dJfga; % This is the TTW scaling.
+
+%     Jbt(i,1:nt) = output.dJbsa+output.dJbea;
     Jbs(i,1:nt) = output.dJbsa;
     Jbe(i,1:nt) = output.dJbea;
     cs = strsplit(foldernames(i,:), '_');
     legstring(i,:) = ['Q_o: -', cs{2}, ', M^2: (', cs{3},')^2'];
 end
-
+%% FIND BEST FIT COEFFICIENT
+[nruns nt] = size(Jfm);
+mvec = reshape(Jfm, nruns*nt,1);
+tvec = reshape(abs(Jft), nruns*nt, 1);
+% gvec = reshape(abs(Jga), nruns*nt, 1);
+mask = isfinite(mvec);
+Fco = abs(regress(mvec(mask), tvec(mask)));
+disp(['Best fit Frictional Coefficient: ', num2str(Fco)]);
+mvec = reshape(Jbm-Jbs, nruns*nt,1);
+svec = reshape(abs(Jbe), nruns*nt, 1);
+mask = isfinite(mvec);
+Dco = regress(mvec(mask), svec(mask));
+disp(['Best fit Diabatic Coefficient: ', num2str(Dco)]);
 %%
 [nruns nt] = size(Jfm);
 xl = [1e-6 1e-1];
@@ -66,27 +76,29 @@ xl = [1e-6 1e-1];
 % Jfi = f0*Vttw*gradb*dx*dy*nx*ny;
 
 meanfac = 1/12;
-meanfac =1;
+% meanfac =1;
 figure
 subplot(1,2,1)
 hold on
 map = colormap(parula(8));
 for i=1:nruns;
-     if mod(i,3)==1
+     if mod(i,4)==1
        set(gca, 'ColorOrderIndex', 1);
 
-     elseif mod(i,3) ==2
+     elseif mod(i,4) ==2
                  set(gca, 'ColorOrderIndex', 2);
 
 %          mark = 'o'
-     else
+     elseif mod(i,4) ==3
                  set(gca, 'ColorOrderIndex', 3);
+     else
+                 set(gca, 'ColorOrderIndex', 4);
 
 %          mark = 's';
      end
-     if i<3
+     if i<4
          mark = 'd';
-     elseif i>3 & i<7
+     elseif i>4 & i<9
           mark = 'o';
      else
          mark = 's';
@@ -97,7 +109,8 @@ for i=1:nruns;
     % regression coefficent found at end of this script. Better approach
     % would be to save flat files with no ce coefficient, and then find the
     % regression coefficient here before plotting.
-    scatter(abs(imresize(Jfm(i,:), meanfac)),0.2./ce.* abs(imresize(Jea(i,:), meanfac)),mark,  'filled', 'MarkerEdgeColor', 'k');
+    scatter(abs(imresize(Jfm(i,:), meanfac)),Fco.*abs(imresize(Jft(i,:), meanfac)),mark,  'filled', 'MarkerEdgeColor', 'k');
+%     scatter(abs(Jfm(i,1:1/meanfac:end)),Fco.*abs(Jft(i,1:1/meanfac:end)),mark,  'filled', 'MarkerEdgeColor', 'k');
 
 end
 %     s =scatter(Jfi, Jfi, 'x', 'LineWidth', 3);
@@ -109,7 +122,7 @@ plot(xt, 0.5*xt, '--k')
 set(gca, 'xlim', xl, 'ylim', xl);
 hold off
 mvec = reshape(Jfm, nruns*nt,1);
-tvec = reshape(Jft, nruns*nt, 1);
+tvec = reshape(-Jft, nruns*nt, 1);
 mask = isfinite(mvec+tvec);
 cr = corr(mvec(mask), tvec(mask));
 title(['Frictional PV Flux,     Corr: ', num2str(cr,2)]);
@@ -119,28 +132,30 @@ set(gca, 'FontSize', 16);
 subplot(1,2,2)
 hold on
 for i=1:nruns;
-%         if i==4; set(gca, 'ColorOrderIndex', 5); end
-     if mod(i,3)==1
+     if mod(i,4)==1
        set(gca, 'ColorOrderIndex', 1);
 
-     elseif mod(i,3) ==2
+     elseif mod(i,4) ==2
                  set(gca, 'ColorOrderIndex', 2);
 
 %          mark = 'o'
-     else
+     elseif mod(i,4) ==3
                  set(gca, 'ColorOrderIndex', 3);
+     else
+                 set(gca, 'ColorOrderIndex', 4);
 
 %          mark = 's';
      end
-     if i<3
+     if i<4
          mark = 'd';
-     elseif i>3 & i<7
+     elseif i>4 & i<9
           mark = 'o';
      else
          mark = 's';
      end
-    scatter(abs(imresize(Jbm(i,:), meanfac)), abs(imresize(Jbt(i,:), meanfac)), mark, 'filled', 'MarkerEdgeColor', 'k');
-    
+    scatter(abs(imresize(Jbm(i,:), meanfac)), abs(imresize(Jbs(i,:)+Dco.*Jbe(i,:), meanfac)), mark, 'filled', 'MarkerEdgeColor', 'k');
+%         scatter(abs(Jbm(i,1:1/meanfac:end)),abs(Jbs(i,1:1/meanfac:end)+Dco.*Jbe(i,1:1/meanfac:end)),mark,  'filled', 'MarkerEdgeColor', 'k');
+
 end
 set(gca, 'xscale', 'log', 'yscale', 'log');
 set(gca, 'xlim', xl, 'ylim', xl);
@@ -152,7 +167,7 @@ plot(xt, 0.5*xt, '--k')
 
 hold off
 mvec = reshape(Jbm, nruns*nt,1);
-tvec = reshape(Jbt, nruns*nt, 1);
+tvec = reshape(Jbs+Dco.*Jbe, nruns*nt, 1);
 mask = isfinite(mvec+tvec);
 cr = corr(mvec(mask), tvec(mask));
 title(['Diabatic PV Flux,     Corr: ', num2str(cr,2)]);
@@ -165,16 +180,5 @@ xlabel('Model $(m^3s^{-4})$'); ylabel('Scaling $(m^3s^{-4})$');
 set(gca, 'FontSize', 16);
 set(gcf, 'Color', 'w', 'Position', [  675         466        1203         508]);
 
-%% FIND BEST FIT COEFFICIENT
-mvec = reshape(Jfm, nruns*nt,1);
-evec = reshape(abs(Jea), nruns*nt, 1);
-gvec = reshape(abs(Jga), nruns*nt, 1);
-mask = isfinite(mvec);
-r = regress(mvec(mask), evec(mask)./ce);
-disp(['Best fit Frictional Coefficient: ', num2str(r)]);
-mvec = reshape(Jbm-Jbs, nruns*nt,1);
-svec = reshape(abs(Jbe), nruns*nt, 1);
-mask = isfinite(mvec);
-r = regress(mvec(mask), evec(mask)./(2*ce));
-disp(['Best fit Diabatic Coefficient: ', num2str(r)]);
+
 

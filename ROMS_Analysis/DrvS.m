@@ -6,6 +6,7 @@ else
     dZdx = DrvROMS(metric, zmetric, TYPE, 1);
     dFdz = DrvROMS(zmetric, Field, 'z', varargin{:});
     OUT = dFdx - dFdz.*dZdx;
+%     OUT = dFdx;
 end
 
 end

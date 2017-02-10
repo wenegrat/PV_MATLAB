@@ -3,10 +3,11 @@
 % XXX - Probably should directly calculate Pressure gradients (not press)
 
 %PARAMETERS TO CHANGE'
-% pardir = '/data/thomas/jacob13/GulfStream/NESEB/';
+% pardir = '/groups/thomas1/jacob13/GulfStream/NESEA/';
 % basepath = [pardir 'HIS/'];
-% path1 = '/data/thomas/jacob13/GulfStream/NESEA/HIS/nesea_his.0000.nc';
+% path1 = '/groups/thomas1/jacob13/GulfStream/NESEA/HIS/nesea_his.0000.nc';
 % ntp = 2;
+% nt = 50;
 % forcepath = [pardir 'nesea_frc.nc'];
 % modeltime = datenum(2012,1,1, 1:12:(nt*12),0,0);
 
@@ -14,16 +15,16 @@ pardir = '/data/thomas/jacob13/GULFZ/';
 basepath = [pardir 'HIS/'];
 path1 = [pardir 'gulfz_grd.nc'];
 forcepath = [pardir 'gulfz_frc.nc'];
-modeltime = datenum(2012,4,24:1:(24+nt-1), 0,0,0);
 ntp = 5;
-nt = 120;
+nt = 345;
+modeltime = datenum(2012,8,(26++offset):1:(26+offset+(nt)-1), 0,0,0);
 
 %
 files = dir([basepath,'*.nc']);
-zl = 15:50;
+zl = 20:50;
 nz = length(zl);
-xl = 850:1100;950:1150;
-yl = 200:350;150:400;
+xl = 700:900;950:1150;
+yl = 150:350;150:400;
 slice =  {[xl(1) xl(end)], [yl(1) yl(end)], [zl(1) zl(end)], 0};
 
 % Load constants/Initial Params
@@ -53,12 +54,12 @@ hold off
 colorbar
 
 % FULL DOMAIN
-path = [basepath, files(1).name];
+path = [basepath, files(50).name];
 
-T = GetVarROMS(path, 0, {'temp', '(1)'}, {0, 0,[48 50], 0});
+T = GetVarROMS(path, 0, {'temp', '(1)'}, {0, 0,0, 0});
 
 subplot(2,1,1)
-pcolor(squeeze(T(:,:,end,1)).'); shading interp
+pcolor(squeeze(T(:,:,24,1)).'); shading interp
 hold on
 rectangle('Position', [xl(1) yl(1) xl(end)-xl(1) yl(end)-yl(1)]);
 hold off
@@ -134,24 +135,7 @@ UPrev = NaN;
 VPrev = NaN;
 BPrev = NaN;
 DuDt = NaN(nx, ny, nz, nt);
-DvDt = DuDt;
-UADV = DuDt;
-VADV = DuDt;
-UCOR = DuDt;
-VCOR = DuDt;
-DbDt = DuDt;
-UPRE = DuDt;
-VPRE = DuDt;
-JFz = DuDt;
-JFx = DuDt;
-JFy = DuDt;
-JBz = DuDt;
-JBx = DuDt;
-JBy = DuDt;
-JAz = DuDt;
-JAx = DuDt;
-JAy = DuDt;
-BADV = DuDt;
+
 Q = DuDt;
 Bx = DuDt;
 By = DuDt;
@@ -164,6 +148,8 @@ hkpp = NaN(nx, ny, nt);
 OMEGAX = DuDt;
 OMEGAY = DuDt;
 OMEGAZ = DuDt;
+JAz = DuDt; JAx = DuDt; JAy = DuDt;
+dADV = JAz;
 
     name = files(1).name;
     path = [basepath, name];
@@ -188,6 +174,7 @@ for i=1:nt;
     
     % 2) Calculate z coordinates at this timestep.
     Eta = GetVarROMS(path, 0, {'zeta', '(1)'}, sliceT);
+
     hkpp(:,:,i) = GetVarROMS(path, 0, {'hbls', '(1)'}, sliceT);
     
     z = compZ(path, 0, Eta, theta_s, theta_b, hc, h);
@@ -214,34 +201,19 @@ for i=1:nt;
     U = GetVarROMS(path, 0, {'u', '(1)'}, sliceT, 1);
     Uu = GetVarROMS(path, 0, {'u', '(1)'}, sliceT, 0);
     % Advective Terms
-%     Ux = DrvS(pm,z, U, 'x');
-%     Uy = DrvS(pn,z, U, 'y');
     Uz = DrvROMS(z, U, 'z');
-    
-    % XXX-ALTERNATE DERIVS
-    Ux = DrvS(pm,z, Uu, 'x', 2);
     Uy = DrvS(pn,z, Uu, 'y', 2);
-
-    % Temporal Difference
-    DuDt(:,:,:,i) = (U - UPrev)./ts - Uz.*zwt;
-    UPrev = U;
+    
     
     % 4) Load Meridional Velocity
     V = GetVarROMS(path, 0, {'v', '(1)'}, sliceT);
     Vv = GetVarROMS(path, 0, {'v', '(1)'}, sliceT,0);
 
     % Advective V
-%     Vx = DrvS(pm,z, V, 'x');
-%     Vy = DrvS(pn,z, V, 'y');
-    Vz = DrvROMS(z, V, 'z');
-        % XXX-ALTERNATE DERIVS
-    % XXX-ALTERNATE DERIVS
-   Vx = DrvS(pm,z, Vv, 'x', 3);
-    Vy = DrvS(pn,z, Vv, 'y', 3);
 
-     DvDt(:,:,:,i) = (V - VPrev)./ts - Vz.*zwt;
-    VPrev = V;
-%     Wz = -Ux - Vy;
+    Vz = DrvROMS(z, V, 'z');
+   Vx = DrvS(pm,z, Vv, 'x', 3);
+
     
     % 5) Load Buoyancy Terms
     T = GetVarROMS(path, 0, {'temp', '(1)'}, sliceT);
@@ -250,7 +222,7 @@ for i=1:nt;
     Sf(:,:,:,i) = S;
 %     rho = roms_eos(T, S, 0); % XXX - referencing to 0 db.
 %     rho = rho + rho0;
-    rho = rho_eos(T, S, z); % CROCO function (checked for consistency 1/12/17)
+    rho = rho_eos(T, S, 0); % CROCO function (checked for consistency 1/12/17)
     Rho(:,:,:,i) = rho;
     B = -g*rho./rho0; % In-Situ B
     % This calculates adiabatically referenced N^2    
@@ -265,149 +237,98 @@ for i=1:nt;
     Bx(:,:,:,i) = DrvS(pm, z, B, 'x');
     By(:,:,:,i) = DrvS(pn, z, B, 'y');
     % - XXX Should be adiabatically leveled first....
-%     Bz(:,:,:,i) = DrvROMS(z, B, 'z');
-    Bz(:,:,:,i) = bvf;
+    Bz(:,:,:,i) = DrvROMS(z, B, 'z');
+%     Bz(:,:,:,i) = bvf;
     % Iterate for vertical integration terms
-        DbDt(:,:,:,i) = (B - BPrev)./ts - bvf.*zwt;
-    BPrev = B;
     
     W = zwt + U.*Zx + V.*Zy + omega;% see: https://www.myroms.org/forum/viewtopic.php?f=19&t=2139
+    Wy = DrvS(pn, z, W, 'y');
+    Wx = DrvS(pm, z, W, 'x');
     
-    % Calculate hydro pressure, probably a much better way to do this...
-    P = NaN(nx, ny, nz);
-    for x =1:nx
-        for y =1:ny
-             zt = squeeze(z(x,y,:));
-            bt = squeeze(B(x,y,:));
-            mask = isfinite(bt);
-            P(x, y, mask) = -rho0.*B(x, y, end).*Eta(x,y) + rho0.*flipud(cumtrapz(flipud(zt(mask)), flipud(bt(mask))));
-        end
-    end
-    
-    % Pressure gradients.
-    Px = DrvS(pm, z, P, 'x');
-    Py = DrvS(pn, z, P, 'y');
-    
-    UADV(:,:,:,i) = U.*Ux + V.*Uy + W.*Uz;
-    VADV(:,:,:,i) = U.*Vx + V.*Vy + W.*Vz;
-    UCOR(:,:,:,i) = -repmat(f, [1 1 nz]).*V;
-    VCOR(:,:,:,i) =  repmat(f, [1 1 nz]).*U;
-    UPRE(:,:,:,i) = 1/rho0.*Px;
-    VPRE(:,:,:,i) = 1/rho0.*Py;
-    BADV(:,:,:,i) = U.*Bx(:,:,:,i) + V.*By(:,:,:,i) + W.*Bz(:,:,:,i);
     OMEGAX(:,:,:,i) = - Vz;
-    OMEGAY(:,:,:,i) = Uz;
+    OMEGAY(:,:,:,i) = + Uz;
     OMEGAZ(:,:,:,i) = repmat(f, [1 1 nz]) + Vx - Uy;
     
     Q(:,:,:,i) = OMEGAX(:,:,:,i).*Bx(:,:,:,i) + OMEGAY(:,:,:,i).*By(:,:,:,i)+OMEGAZ(:,:,:,i).*Bz(:,:,:,i);
     
-    JAz(:,:,:,i) = W.*Q(:,:,:,i); JAx(:,:,:,i) = U.*Q(:,:,:,i); JAy(:,:,:,i) = V.*Q(:,:,:,i);
-
-end
-
-
-%Shift time derivatives 
-% XXX-z shifting  included above
-DuDt(:,:,:,1:end-1) = (DuDt(:,:,:,1:end-1) + DuDt(:,:,:,2:end))./2;
-DvDt(:,:,:,1:end-1) = (DvDt(:,:,:,1:end-1) + DvDt(:,:,:,2:end))./2;
-DbDt(:,:,:,1:end-1) = (DbDt(:,:,:,1:end-1) + DbDt(:,:,:,2:end))./2;
-
-for i=1:nt;((length(files)-ntp)*ntp);
-    FTERMX = DuDt(:,:,:,i) + UADV(:,:,:,i) + UPRE(:,:,:,i)+UCOR(:,:,:,i);
-    FTERMY = DvDt(:,:,:,i) + VADV(:,:,:,i) + VPRE(:,:,:,i)+VCOR(:,:,:,i);
-    JFz(:,:,:,i) = Bx(:,:,:,i).*FTERMY - By(:,:,:,i).*FTERMX;
-    JFx(:,:,:,i) = -Bz(:,:,:,i).*FTERMY; 
-    JFy(:,:,:,i) = Bz(:,:,:,i).*FTERMX;
-    
-    D = DbDt(:,:,:,i) + BADV(:,:,:,i);
-
-    JBx(:,:,:,i) = -OMEGAX(:,:,:,i).*D; JBy(:,:,:,i) = -OMEGAY(:,:,:,i).*D; JBz(:,:,:,i) = -OMEGAZ(:,:,:,i).*D;
-    
+  % SHOULD KEEP ADVECTIVE TERMS...  
+      JAz(:,:,:,i) = W.*Q(:,:,:,i); JAx(:,:,:,i) = U.*Q(:,:,:,i); JAy(:,:,:,i) = V.*Q(:,:,:,i);
+    dADV(:,:,:,i) = DrvROMS(z, JAz(:,:,:,i), 'z') + DrvS(pm,z, JAx(:,:,:,i), 'x') + DrvS(pn,z,JAy(:,:,:,i),'y');
 end
 
 
 %%
-xla = 3:nx-2; yla = 3:ny-2; zla = 1:36;
-mask = ones(size(Q));
-mask = 0*mask;
-mask(xla, yla,:,:) = 1;
+xla = 2:nx-1; yla = 2:ny-1; zla = 10:31;
+mask = zeros(size(Q));
+% mask = 0*mask;
+mask(xla, yla,zla,:) = 1;
+% mask = (Tf>18) & (Tf<20); % Mode Water Mask
+% mask = (Tf>18) & (Tf<20);
+% mask = (Rho> 1026.2) & (Rho<1026.8);
+% mask = (Rho>1026) & (Rho<1026.8);
+mh = hkpp>100;
+mh = permute(repmat(mh, [1 1 1 nz]), [1 2 4 3]);
+% mask = mask.*mh;
 maskA = mask;
 % mask =  (Rho < 1026);
-mask(:,:,end,:) = 0;
-mask(:,:,1,:) = 0;
-mask(1:2,:,:,:) = 0; mask(end-1:end,:,:,:) = 0;
-mask(:, 1:2,:,:) = 0; mask(:,end-1:end,:,:) = 0;
+% mask(:,:,end,:) = 0;
+% mask(:,:,1,:) = 0;
+% mask(1:2,:,:,:) = 0; mask(end-1:end,:,:,:) = 0;
+% mask(:, 1:2,:,:) = 0; mask(:,end-1:end,:,:) = 0;
 dz = diff(zw, 1, 3);
 gridvol = abs(repmat(repmat(1./pm, [1 1 nz]).*repmat(1./pn, [1 1 nz]), [1 1 1 nt])).*abs(dz);
 vol = squeeze(sum(sum(sum(mask.*gridvol))));
+vol = nanmean(vol);
 
-IntegrateQTerms;
-
+IntegrateQTerms
+disp('here')
 %Vertical Terms
 dx = repmat(1./pm, [1 1 nt]);
 dy = repmat(1./pn, [1 1 nt]);
-zlow = zla(1)+1; zhigh = zla(end) - 1;
-[JFz_t, dJFz_t    ] = areaIntegrateJVecsROMS(squeeze(JFz(:,:,zhigh,:)), squeeze(mask(:,:,zhigh,:)), dx, dy, ts, vol);
-[JFz_b, dJFz_b    ] = areaIntegrateJVecsROMS(squeeze(JFz(:,:,zlow,:)), squeeze(mask(:,:,zlow,:)), dx, dy, ts, vol);
-JFzA = JFz_t - JFz_b;
-dJFzA = dJFz_t - dJFz_b;
-[JBz_t, ~    ] = areaIntegrateJVecsROMS(squeeze(JBz(:,:,zhigh,:)), squeeze(mask(:,:,zhigh,:)), dx, dy, ts, vol);
-[JBz_b, ~    ] = areaIntegrateJVecsROMS(squeeze(JBz(:,:,zlow,:)), squeeze(mask(:,:,zlow,:)), dx, dy, ts, vol);
-JBzA = JBz_t - JBz_b;
+zlow = zla(1)+1; zhigh = zla(end) ;
 [JAzA, dJAzA] = areaIntegrateJVecsROMS(squeeze(JAz(:,:,zlow,:)), squeeze(maskA(:,:,zlow,:)), dx, dy, ts, vol);
-JAzA = -JAzA;
-dJAzA = -dJAzA;
+[JAzAt, dJAzAt] = areaIntegrateJVecsROMS(squeeze(JAz(:,:,zhigh,:)), squeeze(maskA(:,:,zhigh,:)), dx, dy, ts, vol);
+
+JAzA = JAzAt-JAzA;
+dJAzA = dJAzAt-dJAzA;
 
 %Zonal Terms
 xleft = xla(1) ; xright = xla(end) ;
 dyl = repmat(squeeze(1./pn(xleft,:).'), [1 nz nt]);
 dyr = repmat(squeeze(1./pn(xright,:).'), [1 nz nt]);
-% dz = diff(zw,1,3);
-% dzl = repmat(squeeze(dz(3,:,:)), [1 1 nt]);
-% dzr = repmat(squeeze(dz(end-2,:,:)), [1 1 nt]);
 dzl = squeeze(dz(xleft,:,:,:));
 dzr = squeeze(dz(xright,:,:,:));
-[JFx_l, dJFx_l ] = areaIntegrateJVecsROMS(squeeze(JFx(xleft,:,:,:)), squeeze(mask(xleft,:,:,:)),  dyl, dzl, ts, vol);
-[JFx_r, dJFx_r    ] = areaIntegrateJVecsROMS(squeeze(JFx(xright,:,:,:)), squeeze(mask(xright,:,:,:)), dyr, dzr, ts, vol);
-JFxA = JFx_r - JFx_l;
-dJFxA = dJFx_r - dJFx_l;
-[JBx_l, dJBx_l    ] = areaIntegrateJVecsROMS(squeeze(JBx(xleft,:,:,:)), squeeze(mask(xleft,:,:,:)),  dyl, dzl, ts, vol);
-[JBx_r, dJBx_r    ] = areaIntegrateJVecsROMS(squeeze(JBx(xright,:,:,:)), squeeze(mask(xright,:,:,:)), dyr, dzr, ts, vol);
-JBxA = JBx_r - JBx_l;
-dJBxA = dJBx_r - dJBx_l;
-[JAx_l, dJAx_l    ] = areaIntegrateJVecsROMS(squeeze(JAx(xleft-1,:,:,:)), squeeze(maskA(xleft-1,:,:,:)),  dyl, dzl, ts, vol);
-[JAx_r, dJAx_r    ] = areaIntegrateJVecsROMS(squeeze(JAx(xright+1,:,:,:)), squeeze(maskA(xright+1,:,:,:)), dyr, dzr, ts, vol);
+[JAx_l, dJAx_l    ] = areaIntegrateJVecsROMS(squeeze(JAx(xleft,:,:,:)), squeeze(maskA(xleft,:,:,:)),  dyl, dzl, ts, vol);
+[JAx_r, dJAx_r    ] = areaIntegrateJVecsROMS(squeeze(JAx(xright,:,:,:)), squeeze(maskA(xright,:,:,:)), dyr, dzr, ts, vol);
 JAxA = JAx_r - JAx_l;
 dJAxA = dJAx_r - dJAx_l;
-%Meridional Terms
+
 yfront = yla(1); yback = yla(end);
 dxf = repmat(squeeze(1./pm(:,yfront)), [1 nz nt]);
 dxb = repmat(squeeze(1./pm(:,yback)), [1 nz nt]);
-% dzf = repmat(squeeze(dz(:,3,:)), [1 1 nt]);
-% dzb = repmat(squeeze(dz(:,end-2,:)), [1 1 nt]);
 dzf = squeeze(dz(:,yfront,:,:));
 dzb = squeeze(dz(:,yback,:,:));
-[JFy_f, ~    ] = areaIntegrateJVecsROMS(squeeze(JFy(:,yfront,:,:)), squeeze(mask(:,yfront,:,:)),  dxf, dzf, ts, vol);
-[JFy_b, ~    ] = areaIntegrateJVecsROMS(squeeze(JFy(:,yback,:,:)), squeeze(mask(:,yback,:,:)), dxb, dzb, ts, vol);
-JFyA = JFy_b - JFy_f;
-[JBy_f, ~    ] = areaIntegrateJVecsROMS(squeeze(JBy(:,yfront,:,:)), squeeze(mask(:,yfront,:,:)),  dxf, dzf, ts, vol);
-[JBy_b, ~    ] = areaIntegrateJVecsROMS(squeeze(JBy(:,yback,:,:)), squeeze(mask(:,yback,:,:)), dxb, dzb, ts, vol);
-JByA = JBy_b - JBy_f;
-[JAy_f, dJAy_f   ] = areaIntegrateJVecsROMS(squeeze(JAy(:,yfront-1,:,:)), squeeze(maskA(:,yfront-1,:,:)),  dxf, dzf, ts, vol);
-[JAy_b, dJAy_b    ] = areaIntegrateJVecsROMS(squeeze(JAy(:,yback+1,:,:)), squeeze(maskA(:,yback+1,:,:)), dxb, dzb, ts, vol);
+[JAy_f, dJAy_f   ] = areaIntegrateJVecsROMS(squeeze(JAy(:,yfront,:,:)), squeeze(maskA(:,yfront,:,:)),  dxf, dzf, ts, vol);
+[JAy_b, dJAy_b    ] = areaIntegrateJVecsROMS(squeeze(JAy(:,yback,:,:)), squeeze(maskA(:,yback,:,:)), dxb, dzb, ts, vol);
 JAyA = JAy_b - JAy_f;
 dJAyA = dJAy_b - dJAy_f;
+
+QADV = JAyA + JAxA + JAzA;
+QADV = QADV - QADV(1);
 %%
 
 figure
+subplot(2,1,1)
 plot(Qa, 'LineWidth', 2);
 hold on
-plot(-JFzA);
-plot(-JBzA);
-plot(-JFxA - JFyA);
-plot(-JBxA - JByA);
-plot(-JAxA - JAyA-JAzA);
-plot(-(JFzA + JBzA+JFxA+JFyA+JBxA+JByA+JAxA+JAyA+JAzA), '--', 'LineWidth', 2);
+plot(-QADV);
+plot(Qa + QADV, '--');
+% plot(-JFzA);
+% plot(-JBzA);
+% plot(-JFxA - JFyA);
+% plot(-JBxA - JByA);
+% plot(-JAxA - JAyA-JAzA);
+% plot(-(JFzA + JBzA+JFxA+JFyA+JBxA+JByA+JAxA+JAyA+JAzA), '--', 'LineWidth', 2);
 % plot(-JFzA-JBzA);
 % plot(-(JFzA + JBzA+JAxA+JAyA+JAzA))
 % plot(Qas)
@@ -417,6 +338,11 @@ grid on
 xlabel('Timestep (12 hours)');
 set(gca, 'FontSize', 18);
 
+subplot(2,1,2)
+plot(squeeze(nanmean(nanmean(mask(:,:,end-1,:)))))
+hold on
+plot(squeeze(nanmean(nanmean(mask(:,:,2,:)))), '--');
+hold off
 %% Q - DIFF
 
 % dQ = Qa + (JFzA + JBzA+JFxA+JFyA+JBxA+JByA+JAxA+JAyA+JAzA);
@@ -430,21 +356,21 @@ set(gca, 'FontSize', 18);
 % hold off
 %% %NON CONSERVATIVE Q PLOT
 
-figure
-plot(Qa+(JAxA+JAyA+JAzA), 'LineWidth', 2);
-hold on
-plot(-JFzA);
-plot(-JBzA);
-plot(-JFxA - JFyA);
-plot(-JBxA - JByA);
-plot(-(JFzA + JBzA+JFxA+JFyA+JBxA+JByA), '--', 'LineWidth', 2);
-% plot(-(JFzA + JBzA+(JFxA+JFyA)+JBxA+JByA), '--', 'LineWidth', 2);
-
-hold off
-legend('\Delta Q','-JFz', '-JBz', '-JFh', '-JBh',  'Sum', 'Location', 'SouthWest')
-grid on
-xlabel('Timestep (12 hours)');
-set(gca, 'FontSize', 18);
+% figure
+% plot(Qa+(JAxA+JAyA+JAzA), 'LineWidth', 2);
+% hold on
+% plot(-JFzA);
+% plot(-JBzA);
+% plot(-JFxA - JFyA);
+% plot(-JBxA - JByA);
+% plot(-(JFzA + JBzA+JFxA+JFyA+JBxA+JByA), '--', 'LineWidth', 2);
+% % plot(-(JFzA + JBzA+(JFxA+JFyA)+JBxA+JByA), '--', 'LineWidth', 2);
+% 
+% hold off
+% legend('\Delta Q','-JFz', '-JBz', '-JFh', '-JBh',  'Sum', 'Location', 'SouthWest')
+% grid on
+% xlabel('Timestep (12 hours)');
+% set(gca, 'FontSize', 18);
 
 %%
 
@@ -456,13 +382,20 @@ Qor = Qor(xl, yl,:);
 EPr = EPr(xl, yl,:);
 tau_u = tau_u(xl, yl,:);
 tau_v = tau_v(xl, yl,:);
+SST = ncread(forcepath, 'SST');
 
-climtime = datenum(2012,1:12, 1);
+Qor = repmat(Qor, [1 1 2]);
+EPr = repmat(EPr, [1 1 2]);
+tau_u = repmat(tau_u, [1 1 2]);
+tau_v = repmat(tau_v, [1 1 2]);
+SST = repmat(SST, [1 1 2]);
+climtime = datenum(2012,1, 15:30:(360*2));
 
 % disp('here')
 Qo = NaN(nx, ny, nt);
 EP = Qo;
 tx = Qo;
+sst = Qo;
 ty = Qo;
 for x = 1:nx;
     for y = 1:ny
@@ -470,75 +403,111 @@ Qo(x, y,:) = interp1(climtime, squeeze(Qor(x,y,:)), modeltime, 'pchip');
 EP(x,y,:) = interp1(climtime, squeeze(EPr(x,y,:)), modeltime, 'pchip');
 tx(x,y,:) = interp1(climtime, squeeze(tau_u(x,y,:)), modeltime, 'pchip');
 ty(x,y,:) = interp1(climtime, squeeze(tau_v(x,y,:)), modeltime, 'pchip');
+sst(x,y,:) = interp1(climtime, squeeze(SST(x,y,:)), modeltime, 'pchip');
     end
 end
 
 Tmean = squeeze(nanmean(nanmean(nanmean(Tf(:,:,end,:), 4))));
 Smean = squeeze(nanmean(nanmean(nanmean(Sf(:,:,end,:), 4))));
 %%
-bseasonalh =squeeze( nanmean(nanmean(-g*alpha*Qor./(rho0*Cp))));
-bseasonals = squeeze(nanmean(nanmean(g*beta*EPr.*35.7)));
-bseasonal = bseasonalh+bseasonals;
-
-figure
-subplot(2,1,1)
-plotyy(1:12, squeeze(nanmean(nanmean(Qor))),1:12, squeeze(nanmean(nanmean(EPr))));
-legend('Q_o', 'E-P');
-grid on
-subplot(2,1,2)
-plot(bseasonal, 'LineWidth', 2);
-hold on
-% plot(bseasonalh);
-% plot(bseasonals);
-hold off
-ylabel('B_o');
-grid on
+mlmask = Rho > repmat(Rho(:,:,end,:), [1 1 nz 1])+0.125;
+mlmask = double(mlmask);
+mlmask(mlmask==0) = NaN;
+zf = diff(zw, 1, 3);
+zf = -permute(repmat(zm, [1 nx ny nt]), [2 3 1 4]);
+mldepth =squeeze( min(zf.*mlmask, [], 3));
 %% GEN THEORY SCALINGS
-del = .1;
-alpha = 1/rho0.*(rho_eos(Tmean+del, Smean, 0)-rho_eos(Tmean-del, Smean, 0))./(2*del);
-beta = 1/rho0.*(rho_eos(Tmean, Smean+del, 0)-rho_eos(Tmean, Smean-del, 0))./(2*del);
+del = 1;
+
+rhot = rho_eos(squeeze(Tf(:,:,end,:)), squeeze(Sf(:,:,end,:)), 0);
+alpha = 1./rhot.*(rho_eos(squeeze(Tf(:,:,end,:))+del, squeeze(Sf(:,:,end,:)), 0)-rho_eos(squeeze(Tf(:,:,end,:))-del, squeeze(Sf(:,:,end,:)), 0))./(2*del);
+beta = 1./rhot.*(rho_eos(squeeze(Tf(:,:,end,:)), squeeze(Sf(:,:,end,:))+del, 0)-rho_eos(squeeze(Tf(:,:,end,:)), squeeze(Sf(:,:,end,:))-del, 0))./(2*del);
 
 Cp = 3994; % XXX - Get ROMS Value
-Bo = g*alpha*Qo./(rho0*Cp) +  g*beta*EP.*squeeze(Sf(:,:,end,:));
-
-M2 = squeeze(Bx(:,:,end-2,:).^2 + By(:,:,end-2,:).^2);
+ssta =  squeeze(Tf(:,:,end,:))-sst;
+Bo = g*alpha.*(Qo-30*ssta)./(rho0*Cp) +  g*beta.*EP.*squeeze(Sf(:,:,end,:));
+% Bo = g*alpha.*(Qo)./(rho0*Cp) +  g*beta.*EP.*squeeze(Sf(:,:,end,:));
+% zf = repmat(zw, [1 1 1 nt]);
+zf = zw(:,:,1:end-1,:);
 H = hkpp; H(:,:,1) = H(:,:,2);
-H(H<1) = 1;
-H = repmat(nanmean(nanmean(H)), [nx ny 1]);
-JBT = -repmat(f, [1 1 nt]).*Bo./H + 0.15*M2.*H;
-JFT = -0.2*M2.*H;
+% H(mldepth>H) = mldepth(mldepth>H);
+% H = squeeze(mldepth);
+% H(H<12) = 12;
+ms = double(zf > -permute(repmat(H, [1 1 1 nz]), [1 2 4 3]));
+ms(ms ==0) = NaN;
+M2 = squeeze(squeeze(nanmean(ms.*Bx(:,:,:,:), 3)).^2 + squeeze(nanmean(ms.*By(:,:,:,:), 3)).^2); %  XX- not averaging over BL...
+m = ~isfinite(M2);
+Ma = squeeze(Bx(:,:,end-1,:)).^2 + squeeze(By(:,:,end-1,:)).^2;
+M2(m) = Ma(m); % Use uppermost gradient value if H is too small...
+
 
 tmag = abs(tx+1i*ty);
-de = sqrt(2*.1*H.*sqrt(tmag./rho0)./repmat(f,[1 1 nt]));
+% de = sqrt(2*.1*H.*sqrt(tmag./rho0)./repmat(f,[1 1 nt]));
 
-JFW = tx./(rho0*H).*squeeze(By(:,:,end-2,:)) - ty./(rho0*H).*squeeze(Bx(:,:,end-2,:));
+% H(H<de) = de(H<de);
+H(H<6) = 6;
+% H = repmat(nanmean(nanmean(H)), [nx ny 1]);
+% JBT = repmat(f, [1 1 nt]).*Bo./H + 0.15*M2.*H;
+% JBT(hkpp < 20) = NaN;
+% JBTs = JBT - 0.15.*M2.*H;
+JFT = -0.2*M2.*H;
+% H(H<24) = 24;
+Hm =H;
+% Hm(Hm<14 & Bo<0) = 14; % Logic here is if the boundary layer is shallow and flux is into ML, correct scale is absorption scale.
+JBTs = repmat(f, [1 1 nt]).*Bo./Hm;
+% JBTs(JBTs<0) = 0;
+JBTe = 0.15.*M2.*H;
+JBT = JBTs + JBTe;
+
+% disp('here')
+
+R = 0.05.*(H.^2.*M2)./(Bo.*repmat(f, [1 1 nt]));
+
+JFW = -tx./(rho0*H).*squeeze(By(:,:,end-2,:)) + ty./(rho0*H).*squeeze(Bx(:,:,end-2,:));
 
 txa = repmat(nanmean(nanmean(tx)), [nx ny 1]);
 tya = repmat(nanmean(nanmean(ty)), [nx ny 1]);
-
+maskh = mask;
+% maskh = mask;
 % JFW = txa./(rho0*H).*squeeze(By(:,:,end-2,:)) - tya./(rho0*H).*squeeze(Bx(:,:,end-2,:));
 dx = repmat(1./pm, [1 1 nt]);
 dy = repmat(1./pn, [1 1 nt]);
-[JBTA, dJBTA    ] = areaIntegrateJVecsROMS(JBT, squeeze(mask(:,:,end-1,:)), dx, dy, ts, vol);
-[JFTA, dJFTA    ] = areaIntegrateJVecsROMS(JFT, squeeze(mask(:,:,end-1,:)), dx, dy, ts, vol);
-[JFWA, dJFWA    ] = areaIntegrateJVecsROMS(JFW, squeeze(mask(:,:,end-1,:)), dx, dy, ts, vol);
+[JBTA, dJBTA    ] = areaIntegrateJVecsROMS(JBT, squeeze(maskh(:,:,end-1,:)), dx, dy, ts, vol);
+[JFTA, dJFTA    ] = areaIntegrateJVecsROMS(JFT, squeeze(maskh(:,:,end-1,:)), dx, dy, ts, vol);
+[JFWA, dJFWA    ] = areaIntegrateJVecsROMS(JFW, squeeze(maskh(:,:,end-1,:)), dx, dy, ts, vol);
+[JBTAs, dJBTAs    ] = areaIntegrateJVecsROMS(JBTs, squeeze(maskh(:,:,end-1,:)), dx, dy, ts, vol);
+[JBTAe, dJBTAe ] =  areaIntegrateJVecsROMS(JBTe, squeeze(maskh(:,:,end-1,:)), dx, dy, ts, vol);
 
 %%
 figure
-plot(Qa+(JAxA+JAyA+JAzA), 'LineWidth', 2);
+subplot(2,1,1)
+plot(Qa.*vol  , 'LineWidth', 2);
 hold on
-plot(-JFzA);
-plot(-JBzA);
-plot(-JFTA);
-plot(-JBTA);
-plot(-JFWA)
+plot(smooth((Qa + QADV).*vol, 20), 'LineWidth', 2);
 
-plot(-(JFTA+JBTA), 'LineWidth', 2, 'LineStyle', '--')
+plot(-JFTA.*vol);
+plot(-JBTA.*vol);
+plot(-JFWA.*vol)
+plot(-JBTAs.*vol, '--');
+plot(-JBTAe.*vol, '--');
+
+plot(-(JFTA+JBTAs+JBTAe+JFWA).*vol, 'LineWidth', 2, 'LineStyle', '--')
 % plot(-(JFzA + JBzA+JFxA + JFyA), 'k','LineWidth', 2)
 hold off
-legend('\Delta Q_{NC}','-JFz', '-JBz', '-JF_{SCALE}', '-JB_{SCALE}', '-JW_{SCALE}', 'SUM-SCALING','Location', 'SouthWest')
+legend('\Delta Q_{NC}','Smoothed','-JF_{SCALE}', '-JB_{SCALE}', '-JW_{SCALE}','JD_S', 'JD_E', 'SUM-SCALING','Location', 'SouthWest')
 grid on
 
+subplot(2,1,2)
+plot(squeeze(nanmean(nanmean(H.*squeeze(mask(:,:,end-1,:))))));
+grid on
+%%
+st =145;
+qnc = (Qa).*vol;
+plot(qnc(st:end) - qnc(st));
+hold on
+jt = -(JFTA + JBTA + JFWA).*vol;
+plot(jt(st:end) - jt(st));
+hold off
 %% SCATTER PLOT
 subplot(2,1,1)
 scatter(-JFzA, -(JFTA))
@@ -551,19 +520,26 @@ scatter(-JBzA, -JBTA)
 onetoone
 grid on
 %%
-scatter(Qa+(JAxA+JAyA+JAzA), -JFTA - JBTA);
+scatter(Qa + JFTA+JBTA+JFWA, -QADV);
+corr(Qa + JFTA+JBTA+JFWA, -QADV)
+
 %% NON-CONS d/dt terms.
-s = 3;
+s =30;
+Qta = gradient(smooth((Qa+QADV).*vol, s), ts);
+% Qta = smooth(Qta, s);
 figure
-plot(Qt);
+plot(Qta);
 hold on
-plot(-dJBTA);
-plot(-dJFTA);
-plot(-(dJBTA+dJFTA));
+plot(-smooth(dJBTA, s));
+plot(-smooth(dJFTA,s));
+plot(-smooth(dJFWA,s));
+plot(-smooth(dJBTAs*1+ ((dJBTA -dJBTAs)*1 +dJFTA)+dJFWA,s));
+plot(-smooth(dJBTAs,s))
 % plot(-smooth(dJBTA+dJFTA,s));
 
 hold off
 grid on
+legend('dQdt', 'J_D', 'J_F', 'JF_W', 'Sum')
 %%
 
 plot(-JAzA);
@@ -572,3 +548,10 @@ plot(-JAxA);
 plot(-JAyA);
 plot(-JAxA-JAyA-JAzA)
 hold off
+legend('z', 'x', 'y', 'sum')
+%%
+
+plotyy(1:350, Qa , 1:350, JAxA);
+
+%%
+scatter(QADV, squeeze(nanmean(nanmean(R.*squeeze(mask(:,:,end-1,:))))))

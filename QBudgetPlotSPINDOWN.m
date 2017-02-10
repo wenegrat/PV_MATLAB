@@ -2,6 +2,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % QBudgetPlot
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+op = outputFull;
+
 timelimit = [0 30];
 cl = [14.25 18.75];
 fs = 16;
@@ -11,7 +13,34 @@ zslice = -5;
 xslice = [0.25];
 yslice = [0.25];
 
-[x, y, z] = meshgrid(X./1000,Y./1000, Z);
+Zl = ncread('state.nc', 'Zl');
+dh = diff([Zl; -300]);
+gridvol = permute(repmat( dx.*dy.*abs(dh), [1 nx ny nt]), [2 3 1 4]);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FULL VOlUME ANALYSIS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+isoT = [13.8 15.8]; %Needed for plot below
+mask = double((THETA(:,:,:,:)>isoT(1)) & (THETA(:,:,:,:)<isoT(2)));
+vol = squeeze(sum(sum(sum(mask.*gridvol))));
+
+Q = op.Q;
+JFz = op.JFz; JBz = op.JBz;
+ts = op.ts;
+dx = op.dx; dy = op.dy;
+
+%INTEGRATE Q
+IntegrateQTerms;
+%AreaIntegrateJTerms
+[JFs, dJFdt] = areaIntegrateJVecs(squeeze(JFz(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
+[JFb, ~    ] = areaIntegrateJVecs(squeeze(JFz(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
+JFa = JFs-JFb;
+[JBs, dJBdt] = areaIntegrateJVecs(squeeze(JBz(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
+[JBb, ~    ] = areaIntegrateJVecs(squeeze(JBz(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
+JBa = JBs-JBb;
+
+
+[x, y, z] = meshgrid(op.X./1000,op.Y./1000, op.Z);
 
 QBudgFig =figure;
 % colormap(cptcmap('balance.cpt'))
@@ -39,7 +68,7 @@ view(-16, 25);
 xlabel('x (km)');
 ylabel('y (km)');
 zlabel('z (m)');
-title(['Day : ', num2str(time(tpos) - time(1))], 'FontSize', fs);
+title(['Day : ', num2str(op.time(tpos) - op.time(1))], 'FontSize', fs);
 % camzoom(1.4)
 % camproj perspective
 hold on
@@ -68,8 +97,8 @@ plot(time, Qa, 'LineWidth', 3)
 hold on
 plot(time, -JFa, 'LineWidth', 2); 
 plot(time, -JBa, 'LineWidth', 2);
-% plot(time, -(JFa+JBa), 'LineWidth',3, 'LineStyle', '--');
-plot(time, -Jbst, 'LineWidth', 1.5, 'LineStyle','--');
+plot(time, -(JFa+JBa), 'LineWidth',3, 'LineStyle', '--');
+% plot(time, -Jbst, 'LineWidth', 1.5, 'LineStyle','--');
 
 set(gca, 'xlim', timelimit);
 
