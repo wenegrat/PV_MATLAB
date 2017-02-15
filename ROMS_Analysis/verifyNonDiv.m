@@ -23,6 +23,6 @@ deltaV = VB-VF;
 WB = nansum(nansum(squeeze(W(:,:,2)).*1./pm.*1./pn));
 deltaW = 0 - WB;
 
-rem = deltaU + deltaV + deltaW;
+rem = deltaU + deltaV + deltaW
 
 disp(['Percentage divergence: ', num2str(rem/vol(end))])
