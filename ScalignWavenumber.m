@@ -1,7 +1,7 @@
 varw = squeeze(Bx(3:end-2,3:end-2,end-2,:));
 varw = squeeze(JFT(3:end-2, 3:end-2,:));
 [nx ny nt] = size(varw);
-dx = 500;
+dx = 1500;
 [psi, lambda] = sleptap(nx);  
 ps = NaN(nt, ny, floor(nx/2)+1);
 for j=1:nt

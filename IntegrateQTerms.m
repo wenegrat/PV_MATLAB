@@ -3,7 +3,7 @@
 % Integrate PV
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Qi = Q+cumsum(dADV, 4).*ts; % XX-TESTING mass weighted...
-Qi = Q; 
+Qi = Q;%+cumsum(dADV,4).*ts; 
 Qi(~isfinite(Qi)) = 0;
 % rho = 1035*( 1-2e-4*(THETA - 16));
 % maskt = mask;

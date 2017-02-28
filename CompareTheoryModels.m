@@ -26,6 +26,8 @@ foldernames(12,:) = 'GS_200_6F';
 
 [nr, ~] = size(foldernames);
 
+jbsc = 1.2; %Empirical coefficient from 1D case.
+
 % clear foldernames
 % foldernames(1,:) = 'GS_100_4F_LEK';
 % nr = 1;
@@ -47,7 +49,7 @@ for i=1:nr;
 %     Jga(i,1:nt) = output.dJfga; % This is the TTW scaling.
 
 %     Jbt(i,1:nt) = output.dJbsa+output.dJbea;
-    Jbs(i,1:nt) = output.dJbsa;
+    Jbs(i,1:nt) = output.dJbsa*jbsc;
     Jbe(i,1:nt) = output.dJbea;
     cs = strsplit(foldernames(i,:), '_');
     legstring(i,:) = ['Q_o: -', cs{2}, ', M^2: (', cs{3},')^2'];
