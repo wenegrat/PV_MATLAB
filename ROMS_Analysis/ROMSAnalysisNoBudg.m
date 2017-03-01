@@ -10,8 +10,15 @@ ntp = 2;
 nt = 190;
 offset = 0;
 inidate = datenum(2012, 1, 1); %XXX- assuming it starts on Jan 1...?
-dateoff = datenum(0, 0, offset);
-modeltime = inidate + dateoff + datenum(0, 0, 0, 1:1:nt, 0,0);
+
+startdate = datenum(2012, 5, 11);
+% oti = ncread([pardir 'nesea_ini.nc'], 'ocean_time');
+% otg = ncread('/data/thomas/jacob13/GULFZ/HIS/gulfz_his.0100.nc','ocean_time')
+tf = ncread([basepath, files(1).name], 'ocean_time');
+% startmodel = startdate + datenum(0, 0, 0, 0, 0, tf(1)-oti);
+modeltime = tf(1):ts:((nt-1)*ts+tf(1));
+% dateoff = datenum(0, 0, offset);
+% modeltime = inidate + dateoff + datenum(0, 0, 0:1:nt-1);
 forcepath = [pardir 'nesea_frc.nc'];
 
 % pardir = '/data/thomas/jacob13/GULFZ/';
@@ -25,9 +32,9 @@ forcepath = [pardir 'nesea_frc.nc'];
 
 %
 files = dir([basepath,'*.nc']);
-zl = 1:30;
+zl = 18:50;
 nz = length(zl);
-xl =  900:1200;1200:1300;
+xl =  1:500;1200:1300;
 yl =  1:500;250:350;
 slice =  {[xl(1) xl(end)], [yl(1) yl(end)], [zl(1) zl(end)], 0};
 
@@ -50,7 +57,8 @@ pn = ncread(path, 'pn');
 pn = pn(xl,yl);
 
 h = ncread(path, 'h');
-subplot(2,1,2)
+% subplot(2,1,2)
+figure
 pcolor(h.'); shading interp
 hold on
 rectangle('Position', [xl(1) yl(1) xl(end)-xl(1) yl(end)-yl(1)]);
@@ -69,12 +77,13 @@ path = [basepath, files(ceil(offset+1./ntp)).name];
 
 T = GetVarROMS(path, 0, {'temp', '(1)'}, {0, 0,0, 0});
 
-subplot(2,1,1)
+% subplot(2,1,1)
 
 % pcolor( (squeeze(T(:,:,end,1))).'); shading interp
 % pcolor( squeeze(lonst(:,1)),squee`ze(latst(1000,:)),(squeeze(T(:,:,end,1))).'); shading interp
 % axesm mercator; framem; gridm; axis on; tightmap
-close all
+% close all
+figure
 axesm('mercator', 'MapLatLimit', [26.75 47], 'MapLonLimit', [-90 -55],...
     'ParallelLabel', 'on', 'MeridianLabel', 'on','PlabelLocation', 5, 'MLabelLocation', 5, 'PLineLocation', 5, 'MLineLocation', 5);
 % axesm('mercator')
@@ -181,7 +190,7 @@ OMEGAX = DuDt;
 OMEGAY = DuDt;
 OMEGAZ = DuDt;
 JAz = DuDt; JAx = DuDt; JAy = DuDt;
-dADV = JAz;
+% dADV = JAz;
 
     name = files(1).name;
     path = [basepath, name];
@@ -295,12 +304,12 @@ for i=1:nt;
 %         JAy(:,2:end,:,i) = Vv(:,1:end,:).*(Q(:,1:end-1,:,i) + Q(:,2:end,:,i))./2;
 %       JAy(:,2:end-1,:,i) = (JAy(:,2:end-1,:,i) + JAy(:,3:end,:,i))./2; 
 %     dADV(:,:,:,i) = DrvROMS(z, JAz(:,:,:,i), 'z') + DrvS(pm,z, JAx(:,:,:,i), 'x') + DrvS(pn,z,JAy(:,:,:,i),'y');
-    dADV(:,:,:,i) = W.*DrvROMS(z, Q(:,:,:,i), 'z') + U.*DrvS(pm,z, Q(:,:,:,i), 'x') + V.*DrvS(pn,z,Q(:,:,:,i),'y');
+%     dADV(:,:,:,i) = W.*DrvROMS(z, Q(:,:,:,i), 'z') + U.*DrvS(pm,z, Q(:,:,:,i), 'x') + V.*DrvS(pn,z,Q(:,:,:,i),'y');
 end
 
 
 %%
-xla = 2:nx-1; yla = 2:ny-1; zla =1:50;
+xla = 2:nx-1; yla = 2:ny-1; zla =1:nz;
 mask = zeros(size(Q));
 % mask = 0*mask;
 mask(:, :,zla,:) = 1;
@@ -364,63 +373,7 @@ dJAyA = dJAy_b - dJAy_f;
 QADV = JAyA + JAxA + JAzA;
 QADV = QADV - QADV(1);
 dQADV = dJAyA + dJAxA + dJAzA;
-%%
 
-figure
-subplot(2,1,1)
-plot(Qa, 'LineWidth', 2);
-hold on
-plot(-QADV);
-plot(Qa + QADV, '--');
-% plot(-JFzA);
-% plot(-JBzA);
-% plot(-JFxA - JFyA);
-% plot(-JBxA - JByA);
-% plot(-JAxA - JAyA-JAzA);
-% plot(-(JFzA + JBzA+JFxA+JFyA+JBxA+JByA+JAxA+JAyA+JAzA), '--', 'LineWidth', 2);
-% plot(-JFzA-JBzA);
-% plot(-(JFzA + JBzA+JAxA+JAyA+JAzA))
-% plot(Qas)
-hold off
-legend('\Delta Q','-J^z_F', '-J_B^z', '-J_F^h', '-J_B^h', '-J_A', 'Sum', 'Location', 'SouthWest')
-grid on
-xlabel('Timestep (days since Feb 1 2012)');
-set(gca, 'FontSize', 18);
-
-subplot(2,1,2)
-plot(squeeze(nanmean(nanmean(mask(:,:,end-1,:)))))
-hold on
-plot(squeeze(nanmean(nanmean(mask(:,:,2,:)))), '--');
-hold off
-
-%%
-
-figure
-subplot(2,1,1)
-plot(Qt, 'LineWidth', 2);
-hold on
-plot(-dQADV);
-plot(Qt + dQADV, '--');
-% plot(-JFzA);
-% plot(-JBzA);
-% plot(-JFxA - JFyA);
-% plot(-JBxA - JByA);
-% plot(-JAxA - JAyA-JAzA);
-% plot(-(JFzA + JBzA+JFxA+JFyA+JBxA+JByA+JAxA+JAyA+JAzA), '--', 'LineWidth', 2);
-% plot(-JFzA-JBzA);
-% plot(-(JFzA + JBzA+JAxA+JAyA+JAzA))
-% plot(Qas)
-hold off
-legend('\Delta Q','-J^z_F', '-J_B^z', '-J_F^h', '-J_B^h', '-J_A', 'Sum', 'Location', 'SouthWest')
-grid on
-xlabel('Timestep (12 hours)');
-set(gca, 'FontSize', 18);
-
-subplot(2,1,2)
-plot(squeeze(nanmean(nanmean(mask(:,:,end-1,:)))))
-hold on
-plot(squeeze(nanmean(nanmean(mask(:,:,2,:)))), '--');
-hold off
 %%
 if false
     zeta = OMEGAZ - repmat(f, [1 1 nz nt]);
@@ -433,6 +386,7 @@ if false
        hold on
        contour(squeeze(mask(:,:,end-1,i)).', [0 1], 'k');
        hold off
+       title(num2str(i));
 %        set(gca, 'clim', cl);
        subplot(2,1,2)
        pcolor((squeeze(zeta(:,:,end-1,i))./f).'); shading interp
@@ -445,34 +399,6 @@ if false
     end
 end
 
-%% Q - DIFF
-
-% dQ = Qa + (JFzA + JBzA+JFxA+JFyA+JBxA+JByA+JAxA+JAyA+JAzA);
-% % plot(gradient(smooth(dQ.*vol, 20), ts))
-% plot(smooth(dQ,20))
-% hold on
-% plot(-JAxA);
-% plot(-JAyA);
-% plot(-JAzA);
-% plot((JAxA + JAyA));
-% hold off
-%% %NON CONSERVATIVE Q PLOT
-
-% figure
-% plot(Qa+(JAxA+JAyA+JAzA), 'LineWidth', 2);
-% hold on
-% plot(-JFzA);
-% plot(-JBzA);
-% plot(-JFxA - JFyA);
-% plot(-JBxA - JByA);
-% plot(-(JFzA + JBzA+JFxA+JFyA+JBxA+JByA), '--', 'LineWidth', 2);
-% % plot(-(JFzA + JBzA+(JFxA+JFyA)+JBxA+JByA), '--', 'LineWidth', 2);
-% 
-% hold off
-% legend('\Delta Q','-JFz', '-JBz', '-JFh', '-JBh',  'Sum', 'Location', 'SouthWest')
-% grid on
-% xlabel('Timestep (12 hours)');
-% set(gca, 'FontSize', 18);
 
 %%
 
@@ -497,8 +423,9 @@ tau_u = repmat(tau_u, [1 1 2]);
 tau_v = repmat(tau_v, [1 1 2]);
 SST = repmat(SST, [1 1 2]);
 SWR = repmat(SWR, [1 1 2]);
-climtime = datenum(2012,1, 15:30:(360*2));
-
+% climtime = datenum(2012,1, 15:30:(360*2));
+ds = 86400;
+climtime = ((360+15)*ds):30*ds:(360*2*ds+360*ds);
 % disp('here')
 Qo = NaN(nx, ny, nt);
 EP = Qo;
@@ -510,13 +437,14 @@ for x = 1:nx;
     disp(num2str(x))
     for y = 1:ny
         try
-        Qo(x, y,:) = interp1(climtime, squeeze(Qor(x,y,:)), modeltime, 'pchip');
+        Qo(x, y,:) = interp1(climtime, squeeze(Qor(x,y,:)), modeltime, 'pchip', 0);
         EP(x,y,:) = interp1(climtime, squeeze(EPr(x,y,:)), modeltime, 'pchip');
         tx(x,y,:) = interp1(climtime, squeeze(tau_u(x,y,:)), modeltime, 'pchip');
         ty(x,y,:) = interp1(climtime, squeeze(tau_v(x,y,:)), modeltime, 'pchip');
         sst(x,y,:) = interp1(climtime, squeeze(SST(x,y,:)), modeltime, 'pchip');
         SW(x,y,:) = interp1(climtime, squeeze(SWR(x,y,:)), modeltime, 'pchip');
-
+        catch ME
+            disp(ME)
         end
     end
 end
@@ -660,19 +588,19 @@ dy = repmat(1./pn, [1 1 nt]);
 [JENTA,dJENTa   ] = areaIntegrateJVecsROMS(JENT, squeeze(maskh(:,:,end-1,:)), dx, dy, ts, vol);
 
 %%
-subplot(2,1,1)
-plot(squeeze(nanmean(nanmean(Hm))));
-
-subplot(2,1,2)
-plot(squeeze(nanmean(nanmean(Bo))));
-hold on
-plot(squeeze(nanmean(nanmean(BSW))));
-plot(squeeze(nanmean(nanmean(BLW))));
-plot(squeeze(nanmean(nanmean(Bsw1))), '--');
-plot(squeeze(nanmean(nanmean(Bsw2))), '--');
-plot(squeeze(nanmean(nanmean(BLW+Bsw1+Bsw2))), '--');
-hold off
-legend('Bo', 'BSW', 'BLW', 'Bsw1', 'Bsw2');
+% subplot(2,1,1)
+% plot(squeeze(nanmean(nanmean(Hm))));
+% 
+% subplot(2,1,2)
+% plot(squeeze(nanmean(nanmean(Bo))));
+% hold on
+% plot(squeeze(nanmean(nanmean(BSW))));
+% plot(squeeze(nanmean(nanmean(BLW))));
+% plot(squeeze(nanmean(nanmean(Bsw1))), '--');
+% plot(squeeze(nanmean(nanmean(Bsw2))), '--');
+% plot(squeeze(nanmean(nanmean(BLW+Bsw1+Bsw2))), '--');
+% hold off
+% legend('Bo', 'BSW', 'BLW', 'Bsw1', 'Bsw2');
 %%
 figure
 % subplot(3,1,1)
@@ -685,9 +613,10 @@ plot(modeltime, -JBTA.*vol, 'LineWidth', 2);
 plot(modeltime, -JFWA.*vol, 'LineWidth', 2)
 % plot(modeltime, -JBTAs.*vol, '--');
 % plot(modeltime, -JBTAe.*vol, '--');
-plot(modeltime, -JENTA.*vol, '--');
+
 
 plot(modeltime, -(JFTA+JBTAs+JBTAe+JFWA+JENTA).*vol, 'LineWidth', 2, 'LineStyle', '--')
+plot(modeltime, -JENTA.*vol, '--');
 % plot(-(JFzA + JBzA+JFxA + JFyA), 'k','LineWidth', 2)
 hold off
 legend('\Delta \int_V Q + \int_t\int_\Sigma uQ \cdot n','-\int_t\int_A J_{F_{GEO}}', '-\int_t\int_A J_{D}', '-\int_t\int_A J_{F_{WIND}}', '-\int_t\int_A (J_{F_{GEO}} + J_D + J_{F_{WIND}})','Location', 'NorthWest')
@@ -697,7 +626,7 @@ title(['1025.9 < \rho < 1026.3'])
 ylabel('m^3 s^{-3}');
 set(gca, 'FontSize', 16);
 datetick('x')
-set(gca, 'xlim', [datenum(2012,12,1) datenum(2013, 8,1)]);
+set(gca, 'xlim', [modeltime(1) modeltime(end)]);
 set(gcf, 'Color', 'w');
 % subplot(3,1,2)
 % plotyy(1:nt, squeeze(nanmean(nanmean(H.*squeeze(mask(:,:,end-1,:))))), 1:nt, squeeze(nanmean(nanmean(Qo.*squeeze(mask(:,:,end-1,:))))));
@@ -738,7 +667,7 @@ grid on
 %%
 plot(var1); hold on; plot(var2); hold off
 %% NON-CONS d/dt terms.
-s =1;
+s =10;
 Qta = gradient((Qa+QADV).*vol, ts);
 Qtana = gradient(Qa*vol, ts);
 % Qta = smooth(Qt + dQADV, s);
@@ -746,7 +675,7 @@ figure
 subplot(2,1,1)
 plot(smooth(Qta,s), 'LineWidth', 2);
 hold on
-plot(-(dJBTAe + dJBTAs +dJFTA+dJFWA+dJENTa), 'LineWidth', 2);
+plot(-smooth(dJBTAe + dJBTAs +dJFTA+dJFWA+dJENTa,s), 'LineWidth', 2);
 plot(-smooth(dJBTA, s));
 plot(-smooth(dJFTA,s));
 plot(-smooth(dJFWA,s));
@@ -765,7 +694,7 @@ ylabel('m^3/s^{-4}');
 % volt = squeeze(sum(sum(sum(mask.*gridvol))));
 
 subplot(2,1,2)
-[ax, h1, h2] = plotyy(1:nt, squeeze(nanmean(nanmean(H))), 1:nt, squeeze(nanmean(nanmean(Qo.*squeeze(mask(:,:,end-1,:))))));
+[ax, h1, h2] = plotyy(1:nt, squeeze(nanmean(nanmean(H.*squeeze(mask(:,:,end-1,:))))), 1:nt, squeeze(nanmean(nanmean(Qo.*squeeze(mask(:,:,end-1,:))))));
 grid on
 set(get(ax(1), 'YLabel'), 'String', 'Mode Water Volume (m^3)');
 set(get(ax(2), 'YLabel'), 'String', 'Q (W m^{-2})');
@@ -773,17 +702,17 @@ set(h1, 'LineWidth', 2);
 set(h2, 'LineWidth', 2);
 set(gcf, 'Color' ,'w')
 %%
-
-plot(-JAzA);
-hold on
-plot(-JAxA);
-plot(-JAyA);
-plot(-JAxA-JAyA-JAzA)
-hold off
-legend('z', 'x', 'y', 'sum')
-%%
-
-% plotyy(1:350, Qa , 1:350, JAxA);
-
-%%
-scatter(QADV, squeeze(nanmean(nanmean(R.*squeeze(mask(:,:,end-1,:))))))
+% 
+% plot(-JAzA);
+% hold on
+% plot(-JAxA);
+% plot(-JAyA);
+% plot(-JAxA-JAyA-JAzA)
+% hold off
+% legend('z', 'x', 'y', 'sum')
+% %%
+% 
+% % plotyy(1:350, Qa , 1:350, JAxA);
+% 
+% %%
+% scatter(QADV, squeeze(nanmean(nanmean(R.*squeeze(mask(:,:,end-1,:))))))
