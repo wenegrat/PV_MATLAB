@@ -3,39 +3,39 @@
 % XXX - Probably should directly calculate Pressure gradients (not press)
 
 %PARAMETERS TO CHANGE'
-pardir = '/groups/thomas1/jacob13/GulfStream/NESEA/';
-basepath = [pardir 'HIS/'];
-path1 = '/groups/thomas1/jacob13/GulfStream/NESEA/HIS/nesea_his.0000.nc';
-ntp = 2;
-nt = 190;
-offset = 0;
-inidate = datenum(2012, 1, 1); %XXX- assuming it starts on Jan 1...?
-
-startdate = datenum(2012, 5, 11);
-% oti = ncread([pardir 'nesea_ini.nc'], 'ocean_time');
-% otg = ncread('/data/thomas/jacob13/GULFZ/HIS/gulfz_his.0100.nc','ocean_time')
-tf = ncread([basepath, files(1).name], 'ocean_time');
-% startmodel = startdate + datenum(0, 0, 0, 0, 0, tf(1)-oti);
-modeltime = tf(1):ts:((nt-1)*ts+tf(1));
-% dateoff = datenum(0, 0, offset);
-% modeltime = inidate + dateoff + datenum(0, 0, 0:1:nt-1);
-forcepath = [pardir 'nesea_frc.nc'];
-
-% pardir = '/data/thomas/jacob13/GULFZ/';
+% pardir = '/groups/thomas1/jacob13/GulfStream/NESEA/';
 % basepath = [pardir 'HIS/'];
-% path1 = [pardir 'gulfz_grd.nc'];
-% forcepath = [pardir 'gulfz_frc.nc'];
-% ntp = 5;
-% nt =  160;345;
-% offset =  120;
-% modeltime = datenum(2012,8,(26+offset):1:(26+offset+(nt)-1), 0,0,0);
+% path1 = '/groups/thomas1/jacob13/GulfStream/NESEA/HIS/nesea_his.0000.nc';
+% ntp = 2;
+% nt = 190;
+% offset = 0;
+% inidate = datenum(2012, 1, 1); %XXX- assuming it starts on Jan 1...?
+% 
+% startdate = datenum(2012, 5, 11);
+% % oti = ncread([pardir 'nesea_ini.nc'], 'ocean_time');
+% % otg = ncread('/data/thomas/jacob13/GULFZ/HIS/gulfz_his.0100.nc','ocean_time')
+% tf = ncread([basepath, files(1).name], 'ocean_time');
+% % startmodel = startdate + datenum(0, 0, 0, 0, 0, tf(1)-oti);
+% modeltime = tf(1):ts:((nt-1)*ts+tf(1));
+% % dateoff = datenum(0, 0, offset);
+% % modeltime = inidate + dateoff + datenum(0, 0, 0:1:nt-1);
+% forcepath = [pardir 'nesea_frc.nc'];
+
+pardir = '/data/thomas/jacob13/GULFZ/';
+basepath = [pardir 'HIS/'];
+path1 = [pardir 'gulfz_grd.nc'];
+forcepath = [pardir 'gulfz_frc.nc'];
+ntp = 5;
+nt =  160;345;
+offset =  120;
+modeltime = datenum(2012,8,(26+offset):1:(26+offset+(nt)-1), 0,0,0);
 
 %
 files = dir([basepath,'*.nc']);
-zl = 18:50;
+zl = 1:50;
 nz = length(zl);
-xl =  1:500;1200:1300;
-yl =  1:500;250:350;
+xl =  600:1202;1200:1300;
+yl =  1:200; 1:350;250:350;
 slice =  {[xl(1) xl(end)], [yl(1) yl(end)], [zl(1) zl(end)], 0};
 
 % Load constants/Initial Params
@@ -73,7 +73,7 @@ disp(['Sub-domain borders (clockwise from bottom left): (', num2str(lats(1,1)), 
     num2str(lats(1,end)),',',num2str(lons(1,end)),')  (', num2str(lats(end,end)),',',num2str(lons(end,end)),')  (',...
     num2str(lats(end,1)),',',num2str(lons(end,1)),')']);
 % FULL DOMAIN
-path = [basepath, files(ceil(offset+1./ntp)).name];
+path = [basepath, files(ceil((offset+1)./ntp)).name];
 
 T = GetVarROMS(path, 0, {'temp', '(1)'}, {0, 0,0, 0});
 
@@ -423,9 +423,9 @@ tau_u = repmat(tau_u, [1 1 2]);
 tau_v = repmat(tau_v, [1 1 2]);
 SST = repmat(SST, [1 1 2]);
 SWR = repmat(SWR, [1 1 2]);
-% climtime = datenum(2012,1, 15:30:(360*2));
+climtime = datenum(2012,1, 15:30:(360*2));
 ds = 86400;
-climtime = ((360+15)*ds):30*ds:(360*2*ds+360*ds);
+% climtime = ((360+15)*ds):30*ds:(360*2*ds+360*ds);
 % disp('here')
 Qo = NaN(nx, ny, nt);
 EP = Qo;

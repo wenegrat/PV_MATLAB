@@ -6,7 +6,7 @@
 % foldernames(6,:) = 'GS_200_2F';%
 % foldernames(7,:) = 'GS_025_4F';%
 % foldernames(8,:) = 'GS_200_4F';
-
+cd /data/thomas/jacob13/PARAMSPACE/
 %% FIRST LOAD ALL OUTPUT FLAT FILES
 clear foldernames
 foldernames(1,:) = 'GS_025_1F';
@@ -129,7 +129,9 @@ mask = isfinite(mvec+tvec);
 cr = corr(mvec(mask), tvec(mask));
 title(['Frictional PV Flux,     Corr: ', num2str(cr,2)]);
 grid on
-xlabel('Model  $(m^3s^{-4})$'); ylabel('Scaling $(m^3s^{-4})$');
+% xlabel('Model  $(m^3s^{-4})$'); ylabel('Scaling $(m^3s^{-4})$');
+xlabel('$|J_F|$ $(m^3s^{-4})$'); ylabel('$c_{F} H |\nabla_H b|^2$ $(m^3s^{-4})$');
+
 set(gca, 'FontSize', 16);
 subplot(1,2,2)
 hold on
@@ -174,9 +176,12 @@ mask = isfinite(mvec+tvec);
 cr = corr(mvec(mask), tvec(mask));
 title(['Diabatic PV Flux,     Corr: ', num2str(cr,2)]);
 grid on
-xlabel('Model $(m^3s^{-4})$'); ylabel('Scaling $(m^3s^{-4})$');
-%legend(legstring(1,:), legstring(2,:),legstring(3,:),legstring(4,:), legstring(5,:), legstring(6,:),legstring(7,:),legstring(8,:), legstring(9,:), 'location', 'SouthEastOutside');
+% xlabel('Model $(m^3s^{-4})$'); ylabel('Scaling $(m^3s^{-4})$');
+xlabel('$|J_D|$ $(m^3s^{-4})$'); ylabel('$c_sf B_o/H + c_{D} H |\nabla_H b|^2$ $(m^3s^{-4})$');
 
+%legend(legstring(1,:), legstring(2,:),legstring(3,:),legstring(4,:), legstring(5,:), legstring(6,:),legstring(7,:),legstring(8,:), legstring(9,:), 'location', 'SouthEastOutside');
+% l = legend('$\nabla b_o = (2f)^2$', '$\nabla b_o = (4f)^2$', '$\nabla b_o = (6f)^2$', '$Q_o = 25$ $W m^{-2}$','$Q_o = 100$ $W m^{-2}$','$Q_o = 200$ $W m^{-2}$' , 'Location', 'NorthEastOutside');
+% set(l, 'Interpreter' ,'latex', 'FontSize', 20)
 % axis equal;
 % box on;
 set(gca, 'FontSize', 16);
