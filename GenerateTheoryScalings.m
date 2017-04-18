@@ -75,3 +75,8 @@ JBeddy = gradb(:,:,2,:).^2.*Hbl;
 % [~, Jbtotpa] = areaIntegrateJVecs(squeeze(JBtotp), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
 [~, Jbsurfa] = areaIntegrateJVecs(squeeze(JBsurf), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
 [~, Jbeddya] = areaIntegrateJVecs(squeeze(JBeddy), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
+
+
+%% Save H and GradB
+HAvg = squeeze(nanmean(nanmean(Hbl)));
+GradBAvg = squeeze(nanmean(nanmean(gradb(:,:,2,:))));

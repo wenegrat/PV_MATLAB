@@ -30,14 +30,14 @@ disp('=======================')
 for i=1:length(M2)
     for j=1:length(Q)
         disp('--------------------');
-        disp(['M2 = ', num2str(M2(i))]);
-        disp(['Q  = ', num2str(Q(j))]);
+        disp(['M^2_o = ', num2str(M2(i))]);
+        disp(['Q_o  = ', num2str(Q(j))]);
         QtoB = (9.81*2e-4./(1035*3994));
-        Qe = h^2*0.04*M2(i)^2./(f) * 1./QtoB;
-        disp(['Q_E= ', num2str(Qe)]);
+        Qe = h^2*0.05*M2(i)^2./(f) * 1./QtoB;
+        disp(['Q_{Eff}= ', num2str(Qe)]);
         Bo = QtoB.*Q(j);
-        gamma = 0.04*h^2*M2(i).^2./(f*Bo);
-        disp(['G  = ', num2str(gamma)]);
+        gamma = 0.05*h^2*M2(i).^2./(f*Bo);
+        disp(['Gamma  = ', num2str(gamma)]);
         Ri = (64*f)^2*f^2./(M2(i).^2);
        
         taustone = sqrt(54/5)*sqrt(1+Ri)./f; % See FK08 eq 3

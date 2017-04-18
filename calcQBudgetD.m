@@ -27,6 +27,7 @@ dpdy = permute(repmat((dEtady), [1, 1, 1, zL]), [1 2 4 3]) + dpdy;
 % Calculate buoyancy gradients
 b = GetVar(statefile, diagfile, {'b', '(1)'}, slice);
 bx = DPeriodic(b, dx,'x');
+
 by = DPeriodic(b, dy, 'y');
 bz = GetVar(statefile, diagfile, {'b', 'Dz(1)'}, slice);
 % bz(:,:,end,:)= 0;
@@ -35,18 +36,19 @@ bz = GetVar(statefile, diagfile, {'b', 'Dz(1)'}, slice);
 
 %ignore w derivatives for consistency with hydrostatic approx.
 %OMEGAX = GetVar(statefile, diagfile, {'WVEL', 'VVEL', 'Dy(1) - Dz(2)'}, slice);
-Wx = DPeriodic(W, dy, 'y');
-Wy = DPeriodic(W, dx, 'x');
+Wy = DPeriodic(W, dy, 'y');
+Wx = DPeriodic(W, dx, 'x');
+
 
 OMEGAX = GetVar(statefile, diagfile, {'VVEL', ' - Dz(1)'}, slice);
-OMEGAX = Wy + OMEGAX;
+% OMEGAX = Wy + OMEGAX;
 %OMEGAY = GetVar(statefile, diagfile, {'UVEL', 'WVEL', 'Dz(1) - Dx(2)'}, slice);
 OMEGAY = GetVar(statefile, diagfile, {'UVEL', 'Dz(1)'}, slice);
-OMEGAY = -Wx + OMEGAY;
+% OMEGAY = -Wx + OMEGAY;
 
 % OMEGAZ = GetVar(statefile, diagfile, {'f_1e-4', 'VVEL', 'UVEL', '(1) + Dx(2) - Dy(3)'}, slice);
 % V = GetVar(statefile, diagfile, {'VVEL', '(1)'}, slice);
-OMEGAZ = DPeriodic(V, dx,'x');
+OMEGAZ = DPeriodic(V, dx,'x'); 
 Uy = DPeriodic(U, dy, 'y');
 OMEGAZ = OMEGAZ  - Uy;
 OMEGAZ = OMEGAZ + 1e-4;

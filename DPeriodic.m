@@ -9,6 +9,8 @@ end
 
 function didx = DxPeriodic(input, dx)
 %Assumes inputs are on rho points.
+nx= size(input, 1);
+if nx>1
 didx = Drv(dx, input, 'x');
 
 endcap = (input(1,:,:,:) - input(end,:,:,:))./dx; % sits on U point = 1.
@@ -17,6 +19,10 @@ lcap = (input(end,:,:,:) - input(end-1,:,:,:))./dx; %sits on U point end-1
 
 didx(1,:,:,:) = 0.5.*(rcap + endcap); %average back to rho=1 point.
 didx(end,:,:,:) = 0.5*(endcap+lcap); %average back to rho=end point
+
+else
+    didx = 0.*input;
+end
 end
 
 function didx = DyPeriodic(input, dy)

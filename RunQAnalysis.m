@@ -14,6 +14,7 @@ kppfile = 'kppdiags.nc';
 
 TtoB = 9.81.*2e-4;
 f0 = 1e-4;
+% f0 = 2.5e-5;
 
 Q0 = ncread(etanfile, 'TFLUX');
 X = ncread(statefile, 'X');
@@ -23,7 +24,11 @@ Zl = ncread(statefile, 'Zl');
 T = ncread(diagfile, 'T');
 
 nx = length(X); ny = length(Y); nz = length(Z);
+try
 dx = X(2)-X(1)
+catch
+    dx = 500;
+end
 dy = Y(2)-Y(1)
 dz = Z(1)-Z(2) %surface only, XX-should track this through the code to ensure correct.
 ts = T(2)-T(1)

@@ -75,6 +75,8 @@ output.dJfga = Jfgeoa;
 output.Tsurf = squeeze(THETA(:,:,1,:));
 output.Q = Q0(1,1,1,1);
 output.time = time;
+output.H = HAvg;
+output.MagB = GradBAvg;
 
 FigString = [IDString, '_OutputsFlat.mat'];
 save(FigString, 'output', '-v7.3');

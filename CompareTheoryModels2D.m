@@ -6,23 +6,26 @@
 % foldernames(6,:) = 'GS_200_2F';%
 % foldernames(7,:) = 'GS_025_4F';%
 % foldernames(8,:) = 'GS_200_4F';
-cd /data/thomas/jacob13/PARAMSPACE/
+cd /scratch/jacob13/
 %% FIRST LOAD ALL OUTPUT FLAT FILES
 clear foldernames
-foldernames(1,:) = 'GS_025_1F';
-foldernames(2,:) = 'GS_025_2F';
-foldernames(3,:) = 'GS_025_4F';
-foldernames(4,:) = 'GS_025_6F';
-foldernames(5,:) = 'GS_100_1F';%
-foldernames(6,:) = 'GS_100_2F';%
-foldernames(7,:) = 'GS_100_4F';%
-foldernames(8,:) = 'GS_100_6F';%
-foldernames(9,:) = 'GS_200_1F';%
-foldernames(10,:) = 'GS_200_2F';%
-foldernames(11,:) = 'GS_200_4F';
-foldernames(12,:) = 'GS_200_6F';
+% foldernames(1,:) = 'GS_025_1F_2D';
+% foldernames(2,:) = 'GS_025_2F';
+% foldernames(3,:) = 'GS_025_4F';
+% foldernames(1,:) = 'GS_025_6F_2D';
+% foldernames(5,:) = 'GS_100_1F';%
+% foldernames(6,:) = 'GS_100_2F';%
+% foldernames(3,:) = 'GS_100_4F_2D';%
+% foldernames(8,:) = 'GS_100_6F';%
+% foldernames(4,:) = 'GS_200_1F_2D';%
+% foldernames(10,:) = 'GS_200_2F';%
+% foldernames(11,:) = 'GS_200_4F';
+foldernames(1,:) = 'GS_025_6F_PR';
 % foldernames(10,:) = 'GS_025_1F';
 % foldernames(11,:) = 'GS_100_1F';
+% foldernames(3,:) = 'GS_02515F_2D';
+% foldernames(4,:) = 'GS_02530F_2D';
+% foldernames(4,:) = 'GS_025SMF_2D';
 
 [nr, ~] = size(foldernames);
 
@@ -43,8 +46,10 @@ for i=1:nr;
     nt = length(output.dJf);
     Jfm(i,1:nt) = output.dJf;
     Jbm(i,1:nt) = output.dJb;
-%     Jbm(i,1:12) = NaN;
-%     Jfm(i,1:12) = NaN;
+    Jbm(i,1:12) = NaN;
+    Jfm(i,1:12) = NaN;
+%     Jfm(i,nt-100:end) = NaN;
+%     Jbm(i,nt-100:end) = NaN;
     Jft(i,1:nt) = output.dJfea;
 %     Jea(i,1:nt) = -output.dJfea;
 %     Jga(i,1:nt) = output.dJfga; % This is the TTW scaling.
@@ -53,24 +58,19 @@ for i=1:nr;
     Jbs(i,1:nt) = output.dJbsa*jbsc;
     Jbe(i,1:nt) = output.dJbea;
     cs = strsplit(foldernames(i,:), '_');
-    legstring(i,:) = ['Q_o: -', cs{2}, ', M^2: (', cs{3},')^2'];
+%     legstring(i,:) = ['Q_o: -', cs{2}, ', M^2: (', cs{3},')^2'];
 end
 %% FIND BEST FIT COEFFICIENT
 [nruns nt] = size(Jfm);
 mvec = reshape(Jfm, nruns*nt,1);
 tvec = reshape(abs(Jft), nruns*nt, 1);
 % gvec = reshape(abs(Jga), nruns*nt, 1);
+surfvec = reshape(Jbs, nruns*nt, 1);
 mask = isfinite(mvec);
-Fco = abs(regress(mvec(mask), tvec(mask)));
-disp(['Best fit Frictional Coefficient: ', num2str(Fco)]);
-mvec = reshape(Jbm-Jbs, nruns*nt,1);
-svec = reshape(abs(Jbe), nruns*nt, 1);
-mask = isfinite(mvec);
-Dco = regress(mvec(mask), svec(mask));
-disp(['Best fit Diabatic Coefficient: ', num2str(Dco)]);
-%%
-mvec = reshape(Jfm, nruns*nt,1);
-tvec = reshape(abs(Jft), nruns*nt, 1);
+Fco = abs(regress(mvec(mask), tvec(mask)))
+% resid = mvec(mask) - Fco.*tvec(mask);
+% se = std(bootstrp(...
+%          1000,@(bootr)regress(Fco.*tvec(mask)+bootr,tvec(mask)),resid));
 bootdat = [mvec(mask),tvec(mask)];
 bootb = bootstrp(1000, @(x) regress(x(:,1),x(:,2:end)),bootdat);
 bootb = sort(bootb);
@@ -78,10 +78,11 @@ Fco = abs(median(bootb));
 Ll = bootb(25); Ul = bootb(975);
 disp(['Best fit Frictional Coefficient: ', num2str(Fco)]);
 disp(['CI Limits Frictional Coefficient: ', num2str(Ll),' - ', num2str(Ul)]);
+%%
 mvec = reshape(Jbm-Jbs, nruns*nt,1);
 svec = reshape(abs(Jbe), nruns*nt, 1);
 mask = isfinite(mvec);
-% Dco = regress(mvec(mask), svec(mask));
+Dco = regress(mvec(mask), svec(mask))
 bootdat = [mvec(mask),svec(mask)];
 bootb = bootstrp(1000, @(x) regress(x(:,1),x(:,2:end)),bootdat);
 bootb = sort(bootb);
@@ -89,6 +90,10 @@ Dco = median(bootb);
 Ll = bootb(25); Ul = bootb(975);
 disp(['Best fit Diabatic Coefficient: ', num2str(Dco)]);
 disp(['CI Limits Diabatic Coefficient: ', num2str(Ll),' - ', num2str(Ul)]);
+
+%%
+% Fco = .2;
+% Dco = .15;
 %%
 [nruns nt] = size(Jfm);
 xl = [1e-6 1e-1];
@@ -100,7 +105,7 @@ xl = [1e-6 1e-1];
 % Jfi = f0*Vttw*gradb*dx*dy*nx*ny;
 
 meanfac = 1/12;
-% meanfac =1;
+meanfac =1;
 figure
 subplot(1,2,1)
 hold on
@@ -155,6 +160,8 @@ grid on
 xlabel('$|J_F|$ $(m^3s^{-4})$'); ylabel('$c_{F} H |\nabla_H b|^2$ $(m^3s^{-4})$');
 
 set(gca, 'FontSize', 16);
+
+%%
 subplot(1,2,2)
 hold on
 for i=1:nruns;
