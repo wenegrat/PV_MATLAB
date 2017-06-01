@@ -52,6 +52,9 @@ for i=1:nlat;
 
 %%
 
+
+
+%%
 mask = ones(size(Q));
 % mask(:,84:108,:)=1;
 % mask = 1;
