@@ -68,13 +68,18 @@ Jbdavg = Jfdavg; %Both terms have same scaling, and surf buoyancy flux only depe
 
 % ce =0; 0.08;
 JBsurf = -f0.*B0./Hbl;
+JBsurf_zeta = -1./ZetaCoeff.*f0.*B0./squeeze(Hbl);
+
 JBeddy = gradb(:,:,2,:).^2.*Hbl;
+JBeddy_zeta = 1./ZetaCoeff.*squeeze(JBeddy);
 % JBtotp = JBsurf + 0JBeddy;
 
 
 % [~, Jbtotpa] = areaIntegrateJVecs(squeeze(JBtotp), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
 [~, Jbsurfa] = areaIntegrateJVecs(squeeze(JBsurf), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
 [~, Jbeddya] = areaIntegrateJVecs(squeeze(JBeddy), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
+[~, Jbsurfa_zeta] = areaIntegrateJVecs(squeeze(JBsurf_zeta), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
+[~, Jbeddya_zeta] = areaIntegrateJVecs(squeeze(JBeddy_zeta), squeeze(masknan(:,:,2,:)), dx*dy, ts, vol);
 
 
 %% Save H and GradB

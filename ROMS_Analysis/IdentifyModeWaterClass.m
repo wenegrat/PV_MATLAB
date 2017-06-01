@@ -34,16 +34,20 @@ set(gca, 'ylim', yl);
 grid on
 
 %%
-rhovec  = reshape(Rho, nx*ny*nz*nt,1);
+rhovec  = reshape(rho, nx*ny*nz*nt,1);
 zvec = reshape(dz, nx*ny*nz*nt,1);
+rhovec(rhovec<1000) = NaN;
+zvec = zvec(isfinite(rhovec));
+rhovec = rhovec(isfinite(rhovec));
 
-edges=linspace(min(rhovec),max(rhovec),100);
+edges=1020:.1:1040;
+edges=linspace(min(rhovec), max(rhovec), 100);
 [trash bin]=histc(rhovec,edges);
 count=accumarray(bin,zvec(:));
 
 subplot(1,2,1)
 bar(edges,count)
-
+%%
 tvec  = reshape(Tf, nx*ny*nz*nt,1);
 
 edges=linspace(min(tvec),max(tvec),100);

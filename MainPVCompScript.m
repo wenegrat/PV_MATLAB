@@ -69,7 +69,7 @@ MakeDescriptiveModeWaterPlots.m
 VolumePlot.m
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Panel Volume Plot
+% H and Buoyancy Plot
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 H_MagB_Plot.m
 

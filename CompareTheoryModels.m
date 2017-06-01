@@ -37,12 +37,16 @@ Jbm = Jfm; Jft = Jfm;  Jbt = Jfm;
 Jea = Jfm; Jga=Jfm;
 Jbs = Jfm;
 Jbe = Jfm;
+Jbe_zeta =Jfm;
+Jbs_zeta = Jfm;
+Jbm_zeta = Jfm;
 for i=1:nr;
     filename = ['./',foldernames(i,:),'/', foldernames(i,:),'_OutputsFlat.mat'];
     load(filename);
     nt = length(output.dJf);
     Jfm(i,1:nt) = output.dJf;
     Jbm(i,1:nt) = output.dJb;
+    Jbm_zeta(i,1:nt) = output.dJb_zeta;
 %     Jbm(i,1:12) = NaN;
 %     Jfm(i,1:12) = NaN;
     Jft(i,1:nt) = output.dJfea;
@@ -52,6 +56,9 @@ for i=1:nr;
 %     Jbt(i,1:nt) = output.dJbsa+output.dJbea;
     Jbs(i,1:nt) = output.dJbsa*jbsc;
     Jbe(i,1:nt) = output.dJbea;
+    Jbs_zeta(i,1:nt) = output.dJbsa_zeta.*jbsc;
+    Jbe_zeta(i,1:nt) = output.dJbea_zeta;
+    
     cs = strsplit(foldernames(i,:), '_');
     legstring(i,:) = ['Q_o: -', cs{2}, ', M^2: (', cs{3},')^2'];
 end
@@ -68,27 +75,37 @@ svec = reshape(abs(Jbe), nruns*nt, 1);
 mask = isfinite(mvec);
 Dco = regress(mvec(mask), svec(mask));
 disp(['Best fit Diabatic Coefficient: ', num2str(Dco)]);
-%%
-mvec = reshape(Jfm, nruns*nt,1);
-tvec = reshape(abs(Jft), nruns*nt, 1);
-bootdat = [mvec(mask),tvec(mask)];
-bootb = bootstrp(1000, @(x) regress(x(:,1),x(:,2:end)),bootdat);
-bootb = sort(bootb);
-Fco = abs(median(bootb));
-Ll = bootb(25); Ul = bootb(975);
-disp(['Best fit Frictional Coefficient: ', num2str(Fco)]);
-disp(['CI Limits Frictional Coefficient: ', num2str(Ll),' - ', num2str(Ul)]);
-mvec = reshape(Jbm-Jbs, nruns*nt,1);
+
+%% FIND BEST FIT COEFFICIENT ZETA
+[nruns nt] = size(Jfm);
+
+mvec = reshape(Jbm_zeta-Jbs, nruns*nt,1);
 svec = reshape(abs(Jbe), nruns*nt, 1);
 mask = isfinite(mvec);
-% Dco = regress(mvec(mask), svec(mask));
-bootdat = [mvec(mask),svec(mask)];
-bootb = bootstrp(1000, @(x) regress(x(:,1),x(:,2:end)),bootdat);
-bootb = sort(bootb);
-Dco = median(bootb);
-Ll = bootb(25); Ul = bootb(975);
-disp(['Best fit Diabatic Coefficient: ', num2str(Dco)]);
-disp(['CI Limits Diabatic Coefficient: ', num2str(Ll),' - ', num2str(Ul)]);
+DcoZ = regress(mvec(mask), svec(mask));
+disp(['Best fit Diabatic Zeta Coefficient: ', num2str(DcoZ)]);
+%%
+% disp('-------------------- Bootstrap Version ----------------------')
+% mvec = reshape(Jfm, nruns*nt,1);
+% tvec = reshape(abs(Jft), nruns*nt, 1);
+% bootdat = [mvec(mask),tvec(mask)];
+% bootb = bootstrp(1000, @(x) regress(x(:,1),x(:,2:end)),bootdat);
+% bootb = sort(bootb);
+% Fco = abs(median(bootb));
+% Ll = bootb(25); Ul = bootb(975);
+% disp(['Best fit Frictional Coefficient: ', num2str(Fco)]);
+% disp(['CI Limits Frictional Coefficient: ', num2str(Ll),' - ', num2str(Ul)]);
+% mvec = reshape(Jbm-Jbs, nruns*nt,1);
+% svec = reshape(abs(Jbe), nruns*nt, 1);
+% mask = isfinite(mvec);
+% % Dco = regress(mvec(mask), svec(mask));
+% bootdat = [mvec(mask),svec(mask)];
+% bootb = bootstrp(1000, @(x) regress(x(:,1),x(:,2:end)),bootdat);
+% bootb = sort(bootb);
+% Dco = median(bootb);
+% Ll = bootb(25); Ul = bootb(975);
+% disp(['Best fit Diabatic Coefficient: ', num2str(Dco)]);
+% disp(['CI Limits Diabatic Coefficient: ', num2str(Ll),' - ', num2str(Ul)]);
 %%
 [nruns nt] = size(Jfm);
 xl = [1e-6 1e-1];
@@ -106,23 +123,23 @@ subplot(1,2,1)
 hold on
 map = colormap(parula(8));
 for i=1:nruns;
-     if mod(i,4)==1
+     if mod(i,4)==1 %1F
        set(gca, 'ColorOrderIndex', 1);
 
-     elseif mod(i,4) ==2
+     elseif mod(i,4) ==2 %2F
                  set(gca, 'ColorOrderIndex', 2);
 
 %          mark = 'o'
-     elseif mod(i,4) ==3
+     elseif mod(i,4) ==3 %4F
                  set(gca, 'ColorOrderIndex', 3);
-     else
+     else    %6F
                  set(gca, 'ColorOrderIndex', 4);
 
 %          mark = 's';
      end
-     if i<4
+     if i<5
          mark = 'd';
-     elseif i>4 & i<9
+     elseif i>4 && i<9
           mark = 'o';
      else
          mark = 's';
@@ -158,23 +175,23 @@ set(gca, 'FontSize', 16);
 subplot(1,2,2)
 hold on
 for i=1:nruns;
-     if mod(i,4)==1
+      if mod(i,4)==1 %1F
        set(gca, 'ColorOrderIndex', 1);
 
-     elseif mod(i,4) ==2
+     elseif mod(i,4) ==2 %2F
                  set(gca, 'ColorOrderIndex', 2);
 
 %          mark = 'o'
-     elseif mod(i,4) ==3
+     elseif mod(i,4) ==3 %4F
                  set(gca, 'ColorOrderIndex', 3);
-     else
+     else    %6F
                  set(gca, 'ColorOrderIndex', 4);
 
 %          mark = 's';
      end
-     if i<4
+     if i<5
          mark = 'd';
-     elseif i>4 & i<9
+     elseif i>4 && i<9
           mark = 'o';
      else
          mark = 's';
@@ -209,5 +226,41 @@ xlabel('$|J_D|$ $(m^3s^{-4})$'); ylabel('$c_sf B_o/H + c_{D} H |\nabla_H b|^2$ $
 set(gca, 'FontSize', 16);
 set(gcf, 'Color', 'w', 'Position', [  675         466        1203         508]);
 
+%% ZETA PLOT
+figure
+hold on
+for i=1:nruns;
+     if mod(i,4)==1
+       set(gca, 'ColorOrderIndex', 1);
 
+     elseif mod(i,4) ==2
+                 set(gca, 'ColorOrderIndex', 2);
 
+%          mark = 'o'
+     elseif mod(i,4) ==3
+                 set(gca, 'ColorOrderIndex', 3);
+     else
+                 set(gca, 'ColorOrderIndex', 4);
+
+%          mark = 's';
+     end
+     if i<4
+         mark = 'd';
+     elseif i>4 & i<9
+          mark = 'o';
+     else
+         mark = 's';
+     end
+    scatter(abs(imresize(Jbm_zeta(i,:), meanfac)), abs(imresize(Jbs(i,:)+DcoZ.*Jbe(i,:), meanfac)), mark, 'filled', 'MarkerEdgeColor', 'k');
+%         scatter(abs(Jbm(i,1:1/meanfac:end)),abs(Jbs(i,1:1/meanfac:end)+Dco.*Jbe(i,1:1/meanfac:end)),mark,  'filled', 'MarkerEdgeColor', 'k');
+
+end
+set(gca, 'xscale', 'log', 'yscale', 'log');
+set(gca, 'xlim', xl, 'ylim', xl);
+
+xt = linspace(xl(1),xl(end), 100);
+plot(xt, xt, 'k');
+plot(xt, 2*xt,'--k')
+plot(xt, 0.5*xt, '--k')
+
+grid on
