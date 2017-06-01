@@ -24,6 +24,8 @@ JFa = JFs-JFb;
 [JBb, ~    ] = areaIntegrateJVecs(squeeze(JBz(:,:,end,:)), squeeze(mask(:,:,end,:)), dx*dy, ts, vol);
 JBa = JBs-JBb;
 
+ZetaCoeff = f0./OMEGAZs;
+[JBa_zeta, dJBdt_zeta] = areaIntegrateJVecs(ZetaCoeff.*squeeze(JBz(:,:,2,:)), squeeze(mask(:,:,2,:)), dx*dy, ts, vol);
 
 
 %%
@@ -48,7 +50,7 @@ outputFull.gridvol = gridvol;
 outputFull.ts = ts;
 outputFull.dx = dx;
 outputFull.dy = dy;
-
+outputFull.ZCoeff = ZetaCoeff;
 
 FigString = [IDString, '_OutputsFull.mat'];
 save(FigString, 'outputFull', '-v7.3');
@@ -62,14 +64,16 @@ output.Qa = Qa;
 output.Qt = Qt;
 output.dJf = dJFdt;
 output.dJb = dJBdt;
+output.dJb_zeta = dJBdt_zeta;
 output.Jfa = JFa;
 output.Jba = JBa;
 % output.dJfa_t = Jftota;
 % output.dJba_t = Jbtotpa;
-
 % Scaling Fields
 output.dJbsa = Jbsurfa;
+output.dJbsa_zeta = Jbsurfa_zeta;
 output.dJbea = Jbeddya;
+output.dJbea_zeta = Jbeddya_zeta;
 output.dJfea = Jfeddya;
 output.dJfga = Jfgeoa;
 output.Tsurf = squeeze(THETA(:,:,1,:));

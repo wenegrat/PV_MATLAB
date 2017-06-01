@@ -32,7 +32,7 @@ tpos = 1 + (i-1).*floor(15*86400./(7200))+floor(5*86400./(7200));
 % end
 set(h, 'edgecolor', 'none')
 hold on
-% contour(time, Y/1000, squeeze(THETA(xpos,:,1,:)), isoT, 'k', 'LineWidth', 2);
+% contour(outputFull.X/1000, outputFull.Y/1000, squeeze(output.Tsurf(:,:,tpos)).',1:.05:40, 'k', 'LineWidth', 1);
 hold off
 % ylabel('y (km)');
 xlabel('x (km)');
@@ -48,12 +48,14 @@ end
 end
 
 %%
+JBS = cumtrapz(output.dJbsa).*(output.time(2)-output.time(1)).*86400./squeeze((nansum(nansum(nansum(outputFull.gridvol)))));
+%%
 subplot(2,nf,(nf+1):(2*nf))
 plot(output.time, smooth(output.Qa,1), 'LineWidth', 2)
 hold on
 plot(output.time, -output.Jfa   , 'LineWidth', 2);
 plot(output.time, -output.Jba, 'LineWidth', 2);
-
+plot(output.time, -JBS, 'LineWidth', 2, 'LineStyle', '--');
 
 % plot(output.time,-(output.Jfa+ output.Jba), 'LineWidth', 2, 'LineStyle', '--');
 % plot(time, - dJBzdt)
@@ -61,7 +63,7 @@ plot(output.time, -output.Jba, 'LineWidth', 2);
 % plot(Qta, 'LineWidth', 2)
 
 hold off
-lgd = legend('$\Delta q$ ', '$-\int_{t} J_F^z$', '$-\int_t J_D^z$','$-\int_t J_{D_{SURF}}$', 'Location', 'NorthWest');
+% lgd = legend('$\Delta q$ ', '$-\int_{t} J_F^z$', '$-\int_t J_D^z$','$-\int_t J_{D_{SURF}}$', 'Location', 'NorthWest');
 xlabel('Days');
 ylabel('$\Delta q$ $(s^{-3})$');
 grid on

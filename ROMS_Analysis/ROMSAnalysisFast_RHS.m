@@ -41,14 +41,13 @@ timestring = 'ocean_time';
 
 % % % 500 m high res
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-basepath = '/groups/thomas1/jacob13/NESEC2/';
-ntp = 10;
-nt = 50;
-offset = 11;
+basepath = '/groups/thomas2/jacob13/NESEC2/';
+ntp = 20;
+nt = 290;
+offset = 1;
 timestring = 'time';
 files = dir([basepath,'*his*.nc']);
-filesuv = dir([basepath,'*uv*.nc']);
-filests = dir([basepath,'*ts*.nc']);
+filespv = dir([basepath,'*pv*.nc']);
     
 % Load constants/Initial Params
 path = [basepath, files(1).name];
@@ -67,10 +66,13 @@ ts = time(2)-time(1);
 
 %
 
+
+
+
 zl = 1:50;
 nz = length(zl);
-xl =  1:2002;100:300;1000:1150;1200:1300;
-yl =  1:1602; 1:150;250:350;
+xl = 1:2002;1000:1150;1200:1300;
+yl =  1:800;250:350;
 
 % USE THIS FOR LARGE DOMAIN TO OVERLAP.
 if bdom
@@ -121,7 +123,7 @@ disp(['Sub-domain borders (clockwise from bottom left): (', num2str(lats(1,1)), 
 path = [basepath, files(ceil((0+offset)./ntp)).name];
  
 %% PLOTS
-if true
+if false
 % subplot(2,1,2)
 figure
 pcolor(h.'); shading interp
@@ -272,8 +274,11 @@ hc = ncreadatt(path, '/', 'hc');
 h = h(xl, yl);
 % end
 mask = zeros(nx, ny, nz, nt);
+rho = mask;
+dz = mask;
 vol = NaN(nt, 1);
 Qa = NaN(nt, 1);
+negQ = Qa;
 dJAzA = Qa;
 dJAxA = Qa;
 dJAyA = Qa;
@@ -304,8 +309,10 @@ omegazs = NaN(nx, ny, nt);
         Ts = omegazs;
         hkpp = omegazs;
         STRAIN = Ts;
+        N2 = omegazs;
+        M2 = omegazs;
+        Bo = omegazs;
 % Qf = NaN(nx, ny, nz, nt);
-
 parfor i=1:nt-offset;
     % 1) Housekeeping
 %     disp([num2str(i), '/', num2str((length(files)-ntp)*ntp)]);
@@ -333,23 +340,12 @@ parfor i=1:nt-offset;
     end
     disp(['FileInd: ', num2str(fileind), '   Ind:', num2str(sliceind), '   i=', num2str(i)]);
     
-    fileindts = fileind-1;
-    sliceindts = sliceind-1;
-    if sliceind==1;
-       fileindts =  fileind-2;
-       sliceindts = ntp;
-    end
-    if (i==1)
-        fileindts = fileind-1;
-        sliceindts = 1;
-    end
+
     sliceT = {slice{1}, slice{2}, slice{3},[sliceind sliceind]};
 
-    nameuv = filesuv(fileindts).name;
-    pathuv = [basepath, nameuv];
-    namets = filests(fileindts).name;
-    pathts = [basepath, namets];
-    sliceTS = {slice{1}, slice{2}, slice{3},[sliceindts sliceindts]};
+    namepv = filespv(fileind).name;
+    pathpv = [basepath, namepv];
+    slicePV = {slice{1}, slice{2}, [50 50], sliceT{4}};
    
         outstruct = ROMSFASTPV(path,pathb, pathf, sliceT, pm, pn, squeeze(sst(:,:,i)),squeeze(sss(:,:,i)), squeeze(Qo(:,:,i)), squeeze(EP(:,:,i)),...
             squeeze(SW(:,:,i)), rho0, Cp, squeeze(tx(:,:,i)), squeeze(ty(:,:,i)), squeeze(tmag(:,:,i)), dxf, dyf,...
@@ -357,6 +353,7 @@ parfor i=1:nt-offset;
         
         
         mask(:,:,:,i) = outstruct.mask;
+        rho(:,:,:,i) = outstruct.Rho;
         JFT(:,:,i) = outstruct.JFT;
         JBTs(:,:,i) = outstruct.JBTs;
         JBTe(:,:,i) = outstruct.JBTe;
@@ -367,6 +364,7 @@ parfor i=1:nt-offset;
         hkpp(:,:,i) = outstruct.h;
         vol(i) = outstruct.vol;
         Qat(i) = outstruct.Qat;
+        negQ(i) = outstruct.negQ;
         dJAzA(i) = outstruct.dJAzA;
         dJAxA(i) = outstruct.dJAxA;
         dJAyA(i) = outstruct.dJAyA;
@@ -379,22 +377,31 @@ parfor i=1:nt-offset;
         dJENTa(i) = outstruct.dJENTa;
         hm(i) = outstruct.hm;
         Qm(i) = outstruct.Qm;
-%         Bo(i) = outstruct.Bo;
+        dz(:,:,:,i) = outstruct.dz;
+        Bo(:,:,i) = outstruct.Bo;
         omegazs(:,:,i) = outstruct.omegazs;
+        M2(:,:,i) = outstruct.M2;
+        N2(:,:,i) = outstruct.N2;
 %         Qf(:,:,:,i) = outstruct.Q;
 %         Tf(:,:,:,i) = outstruct.T;
 
         %%%% GENERATE J VECTORS
-        outputJV = generateJVectors(pathts, pathuv, sliceTS,outstruct.Bx, outstruct.By,outstruct.Bz, rho0, g,...
-            outstruct.OMEGAX, outstruct.OMEGAY, outstruct.OMEGAZ, outstruct.mask,dxf, dyf,outstruct.dz, -outstruct.alpha, -outstruct.beta);
+%         outputJV = generateJVectors(pathts, pathuv, sliceTS,outstruct.Bx, outstruct.By,outstruct.Bz, rho0, g,...
+%             outstruct.OMEGAX, outstruct.OMEGAY, outstruct.OMEGAZ, outstruct.mask,dxf, dyf,outstruct.dz, -outstruct.alpha, -outstruct.beta);
+        
+        outputJV = generateJVectorsRHS(pathpv,sliceT, squeeze(outstruct.OMEGAZ),outstruct.OMEGAX, outstruct.OMEGAY,...
+            squeeze(outstruct.Bx(:,:,:)), squeeze(outstruct.By(:,:,:)), -outstruct.alpha, -outstruct.beta,...
+            g, squeeze(dxf(:,:,:)), squeeze(dyf(:,:,:)), outstruct.dz, outstruct.mask, ...
+            squeeze(outstruct.Q(:,:,end-1)), squeeze(outstruct.Bz(:,:,:)));
+        
         dJDn(i) = outputJV.Jda;
         dJFn(i) = outputJV.Jfa;
         
-        dJDt(i) = outputJV.Jda + outputJV.dJBxA + outputJV.dJByA;
-        dJFt(i) = outputJV.Jfa + outputJV.dJFxA + outputJV.dJFyA;
+%         dJDt(i) = outputJV.Jda + outputJV.dJBxA + outputJV.dJByA;
+%         dJFt(i) = outputJV.Jfa + outputJV.dJFxA + outputJV.dJFyA;
         
-        tJFN(:,:,i) = outputJV.Jf(:,:,end-1);
-        tJBN(:,:,i) = outputJV.Jd(:,:,end-1);
+        tJFN(:,:,i) = outputJV.JFZ(:,:);
+        tJBN(:,:,i) = outputJV.JDZ(:,:);
 end
         disp(['Elapsed Time: ', num2str(toc./60)]);
 
@@ -425,28 +432,38 @@ end
 % set(gca, 'clim', [-1 1].*cl);
 % colorbar;
 %%
-cl = 1e-12;
-ti = 30;
+% cl = 1e-12;
+% ti = 30;
+% figure
+% subplot(2,1,1)
+% pcolor(squeeze((tJFN(:,:,ti) - JFT(:,:,ti))).'); shading interp
+% % pcolor(squeeze((JFW(:,:,ti))).'); shading interp
+% set(gca, 'clim', [-1 1].*cl);
+% hold on
+% contour(squeeze(Ts(:,:,ti).'),20, 'k');
+% hold off
+% colorbar;
+% title('$J_F^{NUM} - J_F^{SCALE}$');
+% 
+% subplot(2,1,2)
+% pcolor(squeeze((tJBN(:,:,ti) - 1.2.*JBTs(:,:,ti)-JBTe(:,:,ti))).'); shading interp
+% set(gca, 'clim', [-1 1].*cl);
+% hold on
+% contour(squeeze(Ts(:,:,ti).'), 20, 'k');
+% hold off
+% colorbar;
+% title('$J_D^{NUM} - J_D^{SCALE}$');
+
+%%
 figure
 subplot(2,1,1)
-pcolor(squeeze((tJFN(:,:,ti) - JFT(:,:,ti))).'); shading interp
-% pcolor(squeeze((JFW(:,:,ti))).'); shading interp
-set(gca, 'clim', [-1 1].*cl);
-hold on
-contour(squeeze(Ts(:,:,ti).'),20, 'k');
-hold off
-colorbar;
-title('$J_F^{NUM} - J_F^{SCALE}$');
-
+plot(vol);
+title('Mask Volume');
 subplot(2,1,2)
-pcolor(squeeze((tJBN(:,:,ti) - 1.2.*JBTs(:,:,ti)-JBTe(:,:,ti))).'); shading interp
-set(gca, 'clim', [-1 1].*cl);
-hold on
-contour(squeeze(Ts(:,:,ti).'), 20, 'k');
-hold off
-colorbar;
-title('$J_D^{NUM} - J_D^{SCALE}$');
-
+yyaxis left
+plot(squeeze(nansum(nansum(mask(:,:,end-1,:)))));
+yyaxis right
+plot(squeeze(nansum(nansum(mask(:,:,2,:)))));
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Do post calculations
@@ -464,7 +481,7 @@ Qa = Qat-Qat(1); % Interested in Delta Q
 Qa = Qa./vol; % Average PV substance in the volume (just a normalization factor).
 
 
-QADV = cumtrapz(dJAzA + dJAxA + dJAyA).*ts./vol;
+QADV = (cumtrapz(dJAzA) + cumtrapz(dJAxA) + cumtrapz(dJAyA)).*ts./vol;
 
 % QADV(m) = cumtrapz(modeltime(m), dJAzA(m) + dJAxA(m) + dJAyA(m));
 % QADV = interp1(modeltime(m), QADV(m), modeltime).'./vol;
@@ -487,36 +504,36 @@ dJDZAe = squeeze(nansum(nansum(JDZe.*squeeze(mask(:,:,end-1,:)).*repmat(dxf(:,:,
 JDZAe = cumtrapz(dJDZAe).*ts./vol;toc
 
 %% MAKE HISTOGRAM PLOT
-omegavec = reshape(omegazs./repmat(f, [1 1 nt]), [nx.*ny*nt, 1]);
-jbvec = reshape(tJBN.*repmat(dx.*dy, [1 1 nt]), [nx.*ny*nt, 1]);
-jfvec = reshape(tJFN.*repmat(dx.*dy, [1 1 nt]), [nx.*ny*nt, 1]);
-edges = -2:0.5:10;
-[N,edges,bin] = histcounts(omegavec, edges);
+% omegavec = reshape(omegazs./repmat(f, [1 1 nt]), [nx.*ny*nt, 1]);
+% jbvec = reshape(tJBN.*repmat(dx.*dy, [1 1 nt]), [nx.*ny*nt, 1]);
+% jfvec = reshape(tJFN.*repmat(dx.*dy, [1 1 nt]), [nx.*ny*nt, 1]);
+% edges = -2:0.5:10;
+% [N,edges,bin] = histcounts(omegavec, edges);
+% 
+% m = bin>0;
+% AvgJB = accumarray(bin(m),jbvec(m),[],@nansum);
+% AvgJF = accumarray(bin(m),jfvec(m),[],@nansum);
+% %% HISTOGRAM FIGURE
+% figure
+% % subplot(1,2,1);
+% bar(0.5.*(edges(2:end)+edges(1:end-1)), -AvgJB)
+% ylabel('$-\int J_D^{NUM} \mathrm{d A}$   $\left[m^3s^{-4}\right]$')
+% set(gca, 'FontSize', 20, 'XTick', -2:2:10)
+% xlabel('$\frac{f+\zeta}{f}$', 'FontSize', 24);
+% 
+% set(gca, 'xlim', [-2 10]);
+% 
+% grid on
+% set(gcf, 'Color', 'w')
 
-m = bin>0;
-AvgJB = accumarray(bin(m),jbvec(m),[],@nansum);
-AvgJF = accumarray(bin(m),jfvec(m),[],@nansum);
-%% HISTOGRAM FIGURE
-figure
-% subplot(1,2,1);
-bar(0.5.*(edges(2:end)+edges(1:end-1)), -AvgJB)
-ylabel('$-\int J_D^{NUM} \mathrm{d A}$   $\left[m^3s^{-4}\right]$')
-set(gca, 'FontSize', 20, 'XTick', -2:2:10)
-xlabel('$\frac{f+\zeta}{f}$', 'FontSize', 24);
-
-set(gca, 'xlim', [-2 10]);
-
-grid on
-set(gcf, 'Color', 'w')
-%%
 % subplot(1,2,2);
-bar(0.5.*(edges(2:end)+edges(1:end-1)), -AvgJF)
-xlabel('$\frac{f+\zeta}{f}$');
-ylabel('$-\int J_F^{NUM} \mathrm{d A}$')
-set(gca, 'FontSize', 20, 'XTick', -2:2:10)
-set(gca, 'xlim', [-2 10]);
-grid on
-set(gcf, 'Color', 'w', 'Position', [   675   561   848   413])
+% bar(0.5.*(edges(2:end)+edges(1:end-1)), -AvgJF)
+% xlabel('$\frac{f+\zeta}{f}$');
+% ylabel('$-\int J_F^{NUM} \mathrm{d A}$')
+% set(gca, 'FontSize', 20, 'XTick', -2:2:10)
+% set(gca, 'xlim', [-2 10]);
+% grid on
+% set(gcf, 'Color', 'w', 'Position', [   675   561   848   413])
 %%
 mt =mod( modeltime./86400, 350);
 
@@ -531,7 +548,7 @@ plot(mt, -(JBTAe+JBTAs+0.*JENTA+JDZA).*vol, 'LineWidth', 2);
 plot(mt, -JFWA.*vol, 'LineWidth', 2)
 
 
-plot(mt, -(JFTA+JBTAe+1.2.*JBTAs+JFWA+0.*JENTA+JDZAe+JDZA).*vol, 'LineWidth', 2, 'LineStyle', '--')
+plot(mt, -(JFTA+JBTAe+1.2.*JBTAs+JFWA+0.*JENTA+0*JDZAe+0*JDZA).*vol, 'LineWidth', 2, 'LineStyle', '--')
 % plot(modeltime, -JENTA.*vol, '--');
 plot(mt, -(JDNA).*vol, '--g');
 plot(mt, -JFNA.*vol, '--b');
@@ -547,7 +564,7 @@ title(['$1025.9 < \rho < 1026.3$'])
 ylabel('$m^3 s^{-3}$');
 set(gca, 'FontSize', 16);
 % datetick('x')
-set(gca, 'xlim', [mt(1) mt(35)]);
+% set(gca, 'xlim', [mt(1) mt(35)]);
 xlabel('Yearday');
 set(gcf, 'Color', 'w');
 % subplot(3,1,2)
@@ -579,13 +596,13 @@ figure
 % subplot(2,1,1)
 plot(mt, smooth(Qta,s), 'LineWidth', 2);
 hold on
-plot(mt, -smooth(dJBTAe  + 1.*dJBTAs +dJFTA+1.*dJFWA+0*dJENTa+dJDZAe,s), 'LineWidth', 2);
+plot(mt, -smooth(dJBTAe  + 1.*dJBTAs +dJFTA+1.*dJFWA+0*dJENTa+0*dJDZAe,s), 'LineWidth', 2);
 plot(mt, -smooth(dJBTA, s));
 plot(mt, -smooth(dJFTA,s));
 plot(mt, -smooth(dJFWA,s), 'r');
 plot(mt, -smooth(dJBTAs,s),'--')
 plot(mt, -smooth(dJENTa,s))
-plot(mt, -smooth(dJDZAe,s))
+% plot(mt, -smooth(dJDZAe,s))
 
 plot(mt, -smooth(dJDn, s));
 plot(mt, -smooth(dJFn, s));
@@ -671,28 +688,178 @@ if false
 lat = ncread('/groups/thomas1/jacob13/GulfStream/NESEA/nesea_grd.nc', 'lat_rho');
 lon = ncread('/groups/thomas1/jacob13/GulfStream/NESEA/nesea_grd.nc', 'lon_rho');
 
+%% RO T plots
+ti=4;
+tlim = [3 25];
+
+Ro = (squeeze(omegazs(:,:,ti)) - f)./f;
+Rib = abs(f.^2.*squeeze(N2(:,:,ti))./squeeze(M2(:,:,ti)));
+h  = ones(3); h(2,2) = 2; h = h./sum(sum(h));
+% Rib = filter2(h, Rib);
+Ro = imgaussfilt(Ro, [1  1]);
+Rib = 1./imgaussfilt(Rib, [2 2]);
+subplot(1,2,1)
+pcolor( (0:2001)./2,(0:1601)./2, squeeze(Ts(:,:,ti)).'); shading interp
+hold on
+% contour((0:2001)./2, (1:1602)./2, squeeze(Ts(:,:,ti)).', 0:2:30, 'k')
+hold off
+set(gca, 'clim', tlim);
+% title('$Temperature$');
+set(gca, 'FontSize', 16);
+axis equal
+xlabel('km'); ylabel('km');
+set(gca, 'xlim', [0 2001]./2, 'ylim', [0 1601]./2); 
+% colormap(gca, cptcmap('BlueWhiteOrangeRed.cpt'))
+set(gcf, 'Color', 'w', 'Position', [   675    63   841   911]);
+
+subplot(1,2,2)
+pcolor( (0:2001)./2,(0:1601)./2, squeeze(Ro(:,:)).'); shading interp
+hold on
+% contour((0:2001)./2, (1:1602)./2, squeeze(Ts(:,:,ti)).', 0:2:30, 'k')
+hold off
+set(gca, 'clim', [-1 1]*2);
+% title('$Temperature$');
+set(gca, 'FontSize', 16);
+axis equal
+xlabel('km'); ylabel('km');
+set(gca, 'xlim', [0 2001]./2, 'ylim', [0 1601]./2); 
+colormap( cptcmap('BlueWhiteOrangeRed.cpt'))
+set(gcf, 'Color', 'w', 'Position', [   675    63   841   911]);
+
+
+%% Ratio EBF Plots
+ti=4;
+tlim = [3 25];
+clr = [0 5];
+EBFgtoW = 0.1.*squeeze(hkpp(:,:,ti).*sqrt(M2(:,:,ti)))./(f.*sqrt(squeeze(tmag(:,:,ti))./1027));
+EBFgtoB = 0.05.*squeeze(hkpp(:,:,ti).^2.*M2(:,:,ti))./(f.*squeeze(abs(Bo(:,:,ti))));
+h  = ones(3); h(2,2) = 2; h = h./sum(sum(h));
+% Rib = filter2(h, Rib);
+% Ro = imgaussfilt(Ro, [1  1]);
+% Rib = 1./imgaussfilt(Rib, [2 2]);
+figure
+% subplot(1,2,1)
+pcolor( (0:2001)./2,(0:1601)./2, squeeze(EBFgtoW).'); shading interp
+hold on
+% contour((0:2001)./2, (1:1602)./2, squeeze(Ts(:,:,ti)).', 0:2:30, 'k')
+hold off
+set(gca, 'clim', clr);
+% title('$Temperature$');
+set(gca, 'FontSize', 18);
+axis equal
+xlabel('km'); ylabel('km');
+set(gca, 'xlim', [0 2001]./2, 'ylim', [0 1601]./2); 
+% colormap(gca, cptcmap('BlueWhiteOrangeRed.cpt'))
+cb = colorbar('SouthOutside');
+colormap( cptcmap('haline.cpt'))
+set(gcf, 'Color', 'w', 'Position', [  170          21        1309         944]);
+t= text(50, 750,0, '$\frac{\tau_g}{\tau_w}$', 'FontSize', 40, 'Color', 'k', ...
+    'HorizontalAlignment', 'center', 'BackgroundColor','w', 'EdgeColor', 'k');
+set(cb, 'Ticks', 0:1:5);
+set(cb, 'FontSize', 24)
 %%
-ti = 10;
+title('$\frac{EBF_g}{EBF} \sim 0.1 \frac{H |\nabla_h b|}{f \sqrt{\tau/\rho}}$', 'Interpreter', 'Latex', 'FontSize', 20);
+subplot(1,2,2)
+pcolor( (0:2001)./2,(0:1601)./2, squeeze(EBFgtoB(:,:)).'); shading interp
+hold on
+% contour((0:2001)./2, (1:1602)./2, squeeze(Ts(:,:,ti)).', 0:2:30, 'k')
+hold off
+set(gca, 'clim', clr);
+% title('$Temperature$');
+set(gca, 'FontSize', 16);
+axis equal
+xlabel('km'); ylabel('km');
+set(gca, 'xlim', [0 2001]./2, 'ylim', [0 1601]./2); 
+colormap( cptcmap('haline.cpt'))
+
+title('$\frac{EBF_g}{Bo} \sim 0.05 \frac{H^2 |\nabla_h b|^2}{f|B_o|}$', 'Interpreter', 'Latex', 'FontSize', 20);
+cb = colorbar;
+set(gcf, 'Color', 'w', 'Position', [  170          21        1309         944]);
+set(cb, 'Position',[0.9253    0.3305    0.0213    0.3741]);
+% subplot(1,2,2)
+% pcolor( (0:2001)./2,(0:1601)./2, squeeze(Rib(:,:)).'); shading interp
+% hold on
+% % contour((0:2001)./2, (1:1602)./2, squeeze(Ts(:,:,ti)).', 0:2:30, 'k')
+% hold off
+% set(gca, 'clim', [-1 1]*2);
+% % title('$Temperature$');
+% set(gca, 'FontSize', 16);
+% axis equal
+% xlabel('km'); ylabel('km');
+% set(gca, 'xlim', [0 2001]./2, 'ylim', [0 1601]./2); 
+% colormap(gca, cptcmap('BlueWhiteOrangeRed.cpt'))
+% set(gcf, 'Color', 'w', 'Position', [   675    63   841   911]);
+%% B Gradient ONLY
+Bgradn = squeeze(sqrt(M2(:,:,ti)))./f.^2;
+pcolor( (0:2001)./2,(0:1601)./2, squeeze(Bgradn).'); shading interp
+hold on
+% contour((0:2001)./2, (1:1602)./2, squeeze(Ts(:,:,ti)).', 0:2:30, 'k')
+hold off
+set(gca, 'clim',[0 100]);
+% title('$Temperature$');
+set(gca, 'FontSize', 16);
+axis equal
+xlabel('km'); ylabel('km');
+set(gca, 'xlim', [0 2001]./2, 'ylim', [0 1601]./2); 
+colormap( cptcmap('haline.cpt'))
+
+title('$\frac{|\nabla_h b|}{f^2}$', 'Interpreter', 'Latex', 'FontSize', 26);
+cb = colorbar;
+set(gcf, 'Color', 'w', 'Position', [           170         245        1112         719]);
+set(cb, 'Position',[       0.8860    0.1090    0.0286    0.8076]);
+set(cb, 'Ticks', [0 100]);
+%% TEMPERATURE ONLY
+pcolor( (0:2001)./2,(0:1601)./2, squeeze(Ts(:,:,ti)).'); shading interp
+hold on
+% contour((0:2001)./2, (1:1602)./2, squeeze(Ts(:,:,ti)).', 0:2:30, 'k')
+hold off
+set(gca, 'clim', tlim);
+% title('$Temperature$');
+set(gca, 'FontSize', 16);
+axis equal
+xlabel('km'); ylabel('km');
+set(gca, 'xlim', [0 2001]./2, 'ylim', [0 1601]./2); 
+colormap(gca, cptcmap('BlueWhiteOrangeRed.cpt'))
+set(gcf, 'Color', 'w', 'Position', [   675    63   841   911]);
+
+%%
+jstring = 'BlWhRe.cpt';
+ti = 3;
 cl = 2e-12;
 mc = .9; %coast color
+tlim = [3 25];
 gap = [.12 .2]; margh = .1; margw=.1;
 figure
-subtightplot(2, 1,1, gap, margh, margw);
-pcolor( (1:2002)./2,(1:1602)./2, -squeeze(tJFN(:,:,ti)).'); shading interp
+% subtightplot(2, 2,1, gap, margh, margw);
+% pcolor( (0:2001)./2,(0:1601)./2, squeeze(Ts(:,:,ti)).'); shading interp
+% hold on
+% % contour((0:2001)./2, (1:1602)./2, squeeze(Ts(:,:,ti)).', 0:2:30, 'k')
+% hold off
+% set(gca, 'clim', tlim);
+% title('$Temperature$');
+% set(gca, 'FontSize', 16);
+% axis equal
+% xlabel('km'); ylabel('km');
+% set(gca, 'xlim', [0 2001]./2, 'ylim', [0 1601]./2); 
+% colormap(gca, cptcmap('BlueWhiteOrangeRed.cpt'))
+
+subtightplot(1, 2,1, gap, margh, margw);
+pcolor( (0:2001)./2,(0:1601)./2, -squeeze(tJFN(:,:,ti)).'); shading interp
 hold on
-contour((1:2002)./2, (1:1602)./2, squeeze(Ts(:,:,ti)).', 0:2:30, 'k')
+% contour((0:2001)./2, (1:1602)./2, squeeze(Ts(:,:,ti)).', 0:2:30, 'k')
 hold off
 set(gca, 'clim', [-1 1].*cl);
 title('$-J_F^{NUM}$');
 set(gca, 'FontSize', 16);
 axis equal
 xlabel('km'); ylabel('km');
+set(gca, 'xlim', [0 2001]./2, 'ylim', [0 1601]./2); 
+colormap(gca, cptcmap(jstring));
 
-
-subtightplot(2, 1,2, gap, margh, margw);
+subtightplot(1, 2,2, gap, margh, margw);
 pcolor( (1:2002)./2,(1:1602)./2, -squeeze(tJBN(:,:,ti)).'); shading interp
 hold on
-contour((1:2002)./2, (1:1602)./2, squeeze(Ts(:,:,ti)).', 0:2:30, 'k')
+% contour((1:2002)./2, (1:1602)./2, squeeze(Ts(:,:,ti)).', 0:2:30, 'k')
 hold off
 set(gca, 'clim', [-1 1].*cl);
 title('$-J_D^{NUM}$');
@@ -701,6 +868,8 @@ axis equal
 xlabel('km'); ylabel('km');
 cb = colorbar;
 set(get(cb, 'YLabel'), 'String', '$ms^{-4}$', 'Interpreter', 'Latex');
+set(gca, 'xlim', [0 2001]./2, 'ylim', [0 1601]./2); 
+
 % subtightplot(2, 1,2, gap, margh, margw);
 % axesm('mercator','MapLatLimit', [34 44], 'MapLonLimit', [-72.5 -58], ...
 %     'ParallelLabel', 'on', 'MeridianLabel', 'on','PlabelLocation', 5, 'MLabelLocation', 5,'MLabelParallel', 'South',...
@@ -716,7 +885,7 @@ set(get(cb, 'YLabel'), 'String', '$ms^{-4}$', 'Interpreter', 'Latex');
 %     'HorizontalAlignment', 'center', 'BackgroundColor','w', 'EdgeColor', 'k');
 % title('$-J_D^{NUM}$')
 % colormap(cptcmap('dkbluered.cpt'));
-colormap(cptcmap('BlWhRe.cpt'));
+colormap(gca, cptcmap(jstring));
 
 set(gcf, 'Color', 'w', 'Position', [   675    63   841   911]);
 set(cb, 'Position', [  0.7589    0.3233    0.0314    0.3403]);

@@ -18,7 +18,7 @@ JBzN = Q;
 JFzH = Q;
 JBzH = Q;
 THETA  = NaN(nx, ny, nz, tslice(end)-tslice(1)+1);
-
+OMEGAZs = NaN(nx, ny, tslice(end)-tslice(1) + 1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MULTIPLE PROCESSOR (speed increase factor of 2)
@@ -31,7 +31,7 @@ for i=1:1:(tslice(end)-tslice(1)+1)
    slicetemp = {slice{1}, slice{2}, slice{3}, [tslice(1)+i-1 tslice(1)+i-1]};
    [Q(:,:,:,i), JAx(:,:,:,i), JAy(:,:,:,i), JAz(:,:,:,i), ...
        JFx(:,:,:,i), JFy(:,:,:,i), JFz(:,:,:,i), JBx(:,:,:,i), JBy(:,:,:,i), JBz(:,:,:,i), ...
-       JFzN(:,:,:,i), JBzN(:,:,:,i), JFzH(:,:,:,i), JBzH(:,:,:,i)]...
+       JFzN(:,:,:,i), JBzN(:,:,:,i), JFzH(:,:,:,i), JBzH(:,:,:,i), OMEGAZs(:,:,i)]...
        = calcQBudgetD(diagfile, statefile, etanfile,extrafile, [nx, ny,nz, 1], slicetemp, dx, dy,dz);
 
    THETA(:,:,:,i) = GetVar(statefile, diagfile, {'THETA', '(1)'}, slicetemp);

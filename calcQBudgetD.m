@@ -1,4 +1,4 @@
-function [Q, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz, JFzN, JBzN, JFzH, JBzH] = calcQBudgetD(diagfile, statefile, etanfile,extrafile, sizes, slice, dx, dy,dz )
+function [Q, JADVx, JADVy, JADVz, JFx, JFy, JFz, JBx, JBy, JBz, JFzN, JBzN, JFzH, JBzH, OMEGAZs] = calcQBudgetD(diagfile, statefile, etanfile,extrafile, sizes, slice, dx, dy,dz )
 nx = sizes(1); ny = sizes(2); nz=sizes(3); nt=sizes(4);
 sliceEta = {slice{1}, slice{2}, [1 1], slice{4}};
 TtoB = 9.81.*2e-4;
@@ -41,10 +41,10 @@ Wx = DPeriodic(W, dx, 'x');
 
 
 OMEGAX = GetVar(statefile, diagfile, {'VVEL', ' - Dz(1)'}, slice);
-% OMEGAX = Wy + OMEGAX;
+OMEGAX = Wy + OMEGAX;
 %OMEGAY = GetVar(statefile, diagfile, {'UVEL', 'WVEL', 'Dz(1) - Dx(2)'}, slice);
 OMEGAY = GetVar(statefile, diagfile, {'UVEL', 'Dz(1)'}, slice);
-% OMEGAY = -Wx + OMEGAY;
+OMEGAY = -Wx + OMEGAY;
 
 % OMEGAZ = GetVar(statefile, diagfile, {'f_1e-4', 'VVEL', 'UVEL', '(1) + Dx(2) - Dy(3)'}, slice);
 % V = GetVar(statefile, diagfile, {'VVEL', '(1)'}, slice);
@@ -52,6 +52,7 @@ OMEGAZ = DPeriodic(V, dx,'x');
 Uy = DPeriodic(U, dy, 'y');
 OMEGAZ = OMEGAZ  - Uy;
 OMEGAZ = OMEGAZ + 1e-4;
+OMEGAZs = squeeze(OMEGAZ(:,:,2));
 Q = OMEGAX.*bx + OMEGAY.*by + OMEGAZ.*bz; %A more direct definition of Q.
 
 %%
