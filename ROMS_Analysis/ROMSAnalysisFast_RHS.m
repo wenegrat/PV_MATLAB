@@ -43,7 +43,7 @@ timestring = 'ocean_time';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 basepath = '/groups/thomas2/jacob13/NESEC2/';
 ntp = 20;
-nt = 290;
+nt = 30;
 offset = 1;
 timestring = 'time';
 files = dir([basepath,'*his*.nc']);
@@ -71,8 +71,8 @@ ts = time(2)-time(1);
 
 zl = 1:50;
 nz = length(zl);
-xl = 1:2002;1000:1150;1200:1300;
-yl =  1:800;250:350;
+xl =1000:1400;1000:1150;1200:1300;
+yl =  300:650;250:350;
 
 % USE THIS FOR LARGE DOMAIN TO OVERLAP.
 if bdom
@@ -347,20 +347,20 @@ parfor i=1:nt-offset;
     pathpv = [basepath, namepv];
     slicePV = {slice{1}, slice{2}, [50 50], sliceT{4}};
    
-        outstruct = ROMSFASTPV(path,pathb, pathf, sliceT, pm, pn, squeeze(sst(:,:,i)),squeeze(sss(:,:,i)), squeeze(Qo(:,:,i)), squeeze(EP(:,:,i)),...
+        [outstruct, outputJV] = ROMSFASTPV_RHS(path,pathpv, pathb, pathf, sliceT, pm, pn, squeeze(sst(:,:,i)),squeeze(sss(:,:,i)), squeeze(Qo(:,:,i)), squeeze(EP(:,:,i)),...
             squeeze(SW(:,:,i)), rho0, Cp, squeeze(tx(:,:,i)), squeeze(ty(:,:,i)), squeeze(tmag(:,:,i)), dxf, dyf,...
             theta_s, theta_b, hc, h, zl, g, f, zmin, ntp, ts, false);
         
         
         mask(:,:,:,i) = outstruct.mask;
-        rho(:,:,:,i) = outstruct.Rho;
+%         rho(:,:,:,i) = outstruct.Rho;
         JFT(:,:,i) = outstruct.JFT;
         JBTs(:,:,i) = outstruct.JBTs;
         JBTe(:,:,i) = outstruct.JBTe;
         JFW(:,:,i) = outstruct.JFW;
-        JENT(:,:,i) = outstruct.JENT;
-        Ts(:,:,i ) = squeeze(outstruct.T(:,:,end));
-        STRAIN(:,:,i) = squeeze(outstruct.STRAIN(:,:,end-1));
+%         JENT(:,:,i) = outstruct.JENT;
+%         Ts(:,:,i ) = squeeze(outstruct.T(:,:,end));
+%         STRAIN(:,:,i) = squeeze(outstruct.STRAIN(:,:,end-1));
         hkpp(:,:,i) = outstruct.h;
         vol(i) = outstruct.vol;
         Qat(i) = outstruct.Qat;
@@ -374,14 +374,14 @@ parfor i=1:nt-offset;
         dJBTAs(i) = outstruct.dJBTAs;
         dJBTAe(i) = outstruct.dJBTAe;
         dJBFWe(i) = outstruct.dJBFWe;
-        dJENTa(i) = outstruct.dJENTa;
+%         dJENTa(i) = outstruct.dJENTa;
         hm(i) = outstruct.hm;
         Qm(i) = outstruct.Qm;
-        dz(:,:,:,i) = outstruct.dz;
+%         dz(:,:,:,i) = outstruct.dz;
         Bo(:,:,i) = outstruct.Bo;
         omegazs(:,:,i) = outstruct.omegazs;
-        M2(:,:,i) = outstruct.M2;
-        N2(:,:,i) = outstruct.N2;
+%         M2(:,:,i) = outstruct.M2;
+%         N2(:,:,i) = outstruct.N2;
 %         Qf(:,:,:,i) = outstruct.Q;
 %         Tf(:,:,:,i) = outstruct.T;
 
@@ -389,10 +389,10 @@ parfor i=1:nt-offset;
 %         outputJV = generateJVectors(pathts, pathuv, sliceTS,outstruct.Bx, outstruct.By,outstruct.Bz, rho0, g,...
 %             outstruct.OMEGAX, outstruct.OMEGAY, outstruct.OMEGAZ, outstruct.mask,dxf, dyf,outstruct.dz, -outstruct.alpha, -outstruct.beta);
         
-        outputJV = generateJVectorsRHS(pathpv,sliceT, squeeze(outstruct.OMEGAZ),outstruct.OMEGAX, outstruct.OMEGAY,...
-            squeeze(outstruct.Bx(:,:,:)), squeeze(outstruct.By(:,:,:)), -outstruct.alpha, -outstruct.beta,...
-            g, squeeze(dxf(:,:,:)), squeeze(dyf(:,:,:)), outstruct.dz, outstruct.mask, ...
-            squeeze(outstruct.Q(:,:,end-1)), squeeze(outstruct.Bz(:,:,:)));
+%         outputJV = generateJVectorsRHS(pathpv,path, sliceT, squeeze(outstruct.OMEGAZ),outstruct.OMEGAX, outstruct.OMEGAY,...
+%             squeeze(outstruct.Bx(:,:,:)), squeeze(outstruct.By(:,:,:)), 0, 0,...
+%             g, squeeze(dxf(:,:,:)), squeeze(dyf(:,:,:)), outstruct.dz, outstruct.mask, ...
+%             squeeze(outstruct.Bz(:,:,:)));
         
         dJDn(i) = outputJV.Jda;
         dJFn(i) = outputJV.Jfa;
@@ -492,7 +492,7 @@ JFWA = cumtrapz(dJFWA).*ts./vol;
 JBTAs = cumtrapz(dJBTAs).*ts./vol;
 JBTAe = cumtrapz(dJBTAe).*ts./vol;
 JFWAe = cumtrapz(dJBFWe).*ts./vol;
-JENTA = cumtrapz(dJENTa).*ts./vol;
+% JENTA = cumtrapz(dJENTa).*ts./vol;
 JDNA = cumtrapz(dJDn).*ts./vol;
 JFNA = cumtrapz(dJFn).*ts./vol;
 
@@ -544,11 +544,11 @@ hold on
 % plot(smooth((Qa +QADV).*vol, 2), 'LineWidth', 2);
 
 plot(mt, -JFTA.*vol, 'LineWidth', 2);
-plot(mt, -(JBTAe+JBTAs+0.*JENTA+JDZA).*vol, 'LineWidth', 2);
+plot(mt, -(JBTAe+JBTAs+0*JDZA).*vol, 'LineWidth', 2);
 plot(mt, -JFWA.*vol, 'LineWidth', 2)
 
 
-plot(mt, -(JFTA+JBTAe+1.2.*JBTAs+JFWA+0.*JENTA+0*JDZAe+0*JDZA).*vol, 'LineWidth', 2, 'LineStyle', '--')
+plot(mt, -(JFTA+JBTAe+1.2*JBTAs+JFWA+0*JDZAe+0*JDZA).*vol, 'LineWidth', 2, 'LineStyle', '--')
 % plot(modeltime, -JENTA.*vol, '--');
 plot(mt, -(JDNA).*vol, '--g');
 plot(mt, -JFNA.*vol, '--b');
@@ -596,7 +596,7 @@ figure
 % subplot(2,1,1)
 plot(mt, smooth(Qta,s), 'LineWidth', 2);
 hold on
-plot(mt, -smooth(dJBTAe  + 1.*dJBTAs +dJFTA+1.*dJFWA+0*dJENTa+0*dJDZAe,s), 'LineWidth', 2);
+plot(mt, -smooth(dJBTAe  + 1.2*dJBTAs +dJFTA+1.*dJFWA+0*dJDZAe+0*dJDZA,s), 'LineWidth', 2);
 plot(mt, -smooth(dJBTA, s));
 plot(mt, -smooth(dJFTA,s));
 plot(mt, -smooth(dJFWA,s), 'r');
@@ -607,6 +607,7 @@ plot(mt, -smooth(dJENTa,s))
 plot(mt, -smooth(dJDn, s));
 plot(mt, -smooth(dJFn, s));
 plot(mt, -smooth(dJFn+dJDn, s), 'k')
+plot(mt, smooth(Qtana, s), 'cy')
 % df = 0.*dJBTAe + 1.*dJENTa + dJBTAs + 2/3.*(-dJFWA-dJFTA);
 % ff = dJFTA + dJFWA;
 % plot(-smooth(df,s));
@@ -620,7 +621,7 @@ legend('$\partial/\partial t \int_V Q + \int_\Sigma uQ \cdot n$', '$-\int_A ( J_
 xlabel('Days');
 title(['$1025.9 < \rho < 1026.3$'])
 ylabel('$m^3/s^{-4}$');
-set(gca, 'xlim', [mt(1) mt(35)]);
+set(gca, 'xlim', [mt(1) mt(end)]);
 
 set(gcf, 'Color', 'w')
 % volt = squeeze(sum(sum(sum(mask.*gridvol))));
@@ -633,6 +634,21 @@ set(gcf, 'Color', 'w')
 % set(h1, 'LineWidth', 2);
 % set(h2, 'LineWidth', 2);
 % set(gcf, 'Color' ,'w')
+%%
+figure
+subplot(1,2,1)
+scatter(dJFn, dJFTA);
+onetoone
+grid on
+cr = corr(dJFn, dJFTA, 'rows', 'pairwise');
+title(num2str(cr))
+subplot(1,2,2)
+scatter(dJDn, dJBTAe + 1.2*dJBTAs)
+cr = corr(dJDn(5:end), dJBTAe(5:end) + 1.2*dJBTAs(5:end)+0*(dJDZA(5:end)+dJDZAe(5:end)), 'rows', 'pairwise');
+title(num2str(cr))
+onetoone
+grid on
+
 %%
 % % 
 % figure 

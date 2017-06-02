@@ -1,4 +1,4 @@
-function output = generateJVectorsRHS(pathpv,sliceT, OMEGAZ,OMEGAX, OMEGAY, Bx, By, alpha, beta, g, dx, dy,dz, mask, Q, Bz)
+function output = generateJVectorsRHS(pathpv,path, sliceT, OMEGAZ,OMEGAX, OMEGAY, Bx, By, alpha, beta, g, dx, dy,dz, mask, Bz)
 
 % U RHS
 URHS = GetVarROMS(pathpv, 0, {'u_rhs', '(1)'}, sliceT);
@@ -7,16 +7,19 @@ VRHS = GetVarROMS(pathpv, 0, {'v_rhs', '(1)'}, sliceT);
 
 % T RHS
 TRHS = GetVarROMS(pathpv, 0, {'temp_rhs', '(1)'}, sliceT);
-
+T = GetVarROMS(path, 0, {'temp', '(1)'}, sliceT);
 % S RHS
 SRHS = GetVarROMS(pathpv, 0, {'salt_rhs', '(1)'}, sliceT);
+S = GetVarROMS(path, 0, {'salt', '(1)'}, sliceT);
 
 
 JFZ = Bx.*VRHS - By.*URHS;
 JFX = -Bz.*VRHS;
 JFY = Bz.*URHS;
 
-D   = g*alpha.*(TRHS)   + g*beta.*(SRHS);
+% D   = g*alpha.*(TRHS)   + g*beta.*(SRHS);
+% D = -g./1027.*rho_eos(TRHS, SRHS, 0);
+D = bRHS(TRHS, SRHS, T, S, 1027.4, g);
 
 % magb = sqrt(Bx.^2 + By.^2 + Bz.^2);
 % FACT = (Q.*Bz./(magb.^2)); % See HM90 Eq. 4.1 and 4.2

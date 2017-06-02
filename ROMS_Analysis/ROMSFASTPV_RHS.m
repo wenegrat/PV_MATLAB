@@ -1,4 +1,4 @@
-function  outStruct = ROMSFASTPV(path, pathf,pathb, sliceT, pm, pn, sst,sss, Qo, EP, SW, rho0, Cp, tx, ty,...
+function  [outStruct output] = ROMSFASTPV_RHS(path,pathpv, pathf,pathb, sliceT, pm, pn, sst,sss, Qo, EP, SW, rho0, Cp, tx, ty,...
                                 tmag, dxf, dyf, theta_s, theta_b, hc, h,zl, g, f, zmin, ntp, ts, oldrunflag)
 %%%%%%%%%%%%%%%%
 % ROMSFASTPV Jacob Wenegrat (jwenegrat@stanford.edu)
@@ -19,7 +19,7 @@ function  outStruct = ROMSFASTPV(path, pathf,pathb, sliceT, pm, pn, sst,sss, Qo,
 %%%%%%%%%%%%%%%%%
 
 r=0.58; d1=0.35; d2=23; % Solar Absorption Jerlov I
-dx = squeeze(dxf(:,:,1)); dy = squeeze(dyf(:,:,1));
+dx = squeeze(dxf(:,:,end-1)); dy = squeeze(dyf(:,:,end-1));
 
     % Here because different runs have different netcdf naming conventions
     if oldrunflag
@@ -33,18 +33,18 @@ dx = squeeze(dxf(:,:,1)); dy = squeeze(dyf(:,:,1));
 
     hkpp = GetVarROMS(path, 0, {hkppstring, '(1)'}, sliceT); %Old runs are hbls
     
-    if (sliceT{4}(1) == ntp)
-        hkppf = GetVarROMS(pathf, 0, { hkppstring, '(1)'}, {sliceT{1}, sliceT{2}, sliceT{3}, [1 1]});
-        hkppb = GetVarROMS(path, 0, { hkppstring, '(1)'}, {sliceT{1}, sliceT{2}, sliceT{3}, [sliceT{4}(1)-1 sliceT{4}(2)-1]});
-    elseif sliceT{4}(1) == 1
-        hkppb = GetVarROMS(pathb, 0, { hkppstring, '(1)'}, {sliceT{1}, sliceT{2}, sliceT{3}, [ntp ntp]});
-        hkppf = GetVarROMS(path, 0, { hkppstring, '(1)'}, {sliceT{1}, sliceT{2}, sliceT{3}, [2 2]});
-    else % middle of one file
-        hkppb = GetVarROMS(path, 0, { hkppstring, '(1)'}, {sliceT{1}, sliceT{2}, sliceT{3}, [sliceT{4}(1)-1 sliceT{4}(2)-1]});
-        hkppf = GetVarROMS(path, 0, { hkppstring, '(1)'}, {sliceT{1}, sliceT{2}, sliceT{3}, [sliceT{4}(1)+1 sliceT{4}(2)+1]});
-    end
-    dhdt = (hkppf-hkppb)./(2*ts);
-    dhdt(dhdt<0) = 0;
+%     if (sliceT{4}(1) == ntp)
+%         hkppf = GetVarROMS(pathf, 0, { hkppstring, '(1)'}, {sliceT{1}, sliceT{2}, sliceT{3}, [1 1]});
+%         hkppb = GetVarROMS(path, 0, { hkppstring, '(1)'}, {sliceT{1}, sliceT{2}, sliceT{3}, [sliceT{4}(1)-1 sliceT{4}(2)-1]});
+%     elseif sliceT{4}(1) == 1
+%         hkppb = GetVarROMS(pathb, 0, { hkppstring, '(1)'}, {sliceT{1}, sliceT{2}, sliceT{3}, [ntp ntp]});
+%         hkppf = GetVarROMS(path, 0, { hkppstring, '(1)'}, {sliceT{1}, sliceT{2}, sliceT{3}, [2 2]});
+%     else % middle of one file
+%         hkppb = GetVarROMS(path, 0, { hkppstring, '(1)'}, {sliceT{1}, sliceT{2}, sliceT{3}, [sliceT{4}(1)-1 sliceT{4}(2)-1]});
+%         hkppf = GetVarROMS(path, 0, { hkppstring, '(1)'}, {sliceT{1}, sliceT{2}, sliceT{3}, [sliceT{4}(1)+1 sliceT{4}(2)+1]});
+%     end
+%     dhdt = (hkppf-hkppb)./(2*ts);
+%     dhdt(dhdt<0) = 0;
     
     [nx ny] = size(hkpp);
     
@@ -183,7 +183,7 @@ dx = squeeze(dxf(:,:,1)); dy = squeeze(dyf(:,:,1));
         
         JBTs = f.*Bup./hkpp;
         
-        JENT = 0.*f.*akh.*bzh./(hkpp) + f.*dhdt.*bdiff./hkpp; %f.*dhdt.*bzh;
+%         JENT = 0.*f.*akh.*bzh./(hkpp) + f.*dhdt.*bdiff./hkpp; %f.*dhdt.*bzh;
         JBTe = 0.15.*M2.*hkpp;
         JBT = JBTs + JBTe;
         
@@ -199,7 +199,7 @@ dx = squeeze(dxf(:,:,1)); dy = squeeze(dyf(:,:,1));
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %     mask = 0.*mask; % Reset mask
     mask = (rho>1025.9) & (rho<1026.3);
-%     mask = (rho>1025.5) & (rho<1026); disp('Alternate Mask');
+    mask = (rho>1024.9) & (rho<1026.9); disp('Alternate Mask');
 %     mask = (T>18) & (T<20);
 %     mask = ones(size(rho)); disp('Using full volume mask!');
     gridvol = abs(dxf.*dyf).*abs(dz);
@@ -234,7 +234,7 @@ dx = squeeze(dxf(:,:,1)); dy = squeeze(dyf(:,:,1));
         outStruct.dJBTAs = squeeze(nansum(nansum(JBTs.*squeeze(mask(:,:,end-1)).*dx.*dy)));
         outStruct.dJBTAe = squeeze(nansum(nansum(JBTe.*squeeze(mask(:,:,end-1)).*dx.*dy)));
         outStruct.dJBFWe = squeeze(nansum(nansum(JFWe.*squeeze(mask(:,:,end-1)).*dx.*dy)));
-        outStruct.dJENTa = squeeze(nansum(nansum(JENT.*squeeze(mask(:,:,end-1)).*dx.*dy)));
+%         outStruct.dJENTa = squeeze(nansum(nansum(JENT.*squeeze(mask(:,:,end-1)).*dx.*dy)));
       
         
     % Other useful thing sto keep
@@ -246,14 +246,14 @@ dx = squeeze(dxf(:,:,1)); dy = squeeze(dyf(:,:,1));
 %     outStruct.N2 = N2;
     outStruct.Qm = squeeze(nanmean(nanmean(squeeze(Qo(:,:)).*squeeze(mask(:,:,end-1)))));
     outStruct.omegazs(:,:) = squeeze(OMEGAZ(:,:,end-2,:));
-    outStruct.OMEGAZ = OMEGAZ;
-    outStruct.OMEGAX = OMEGAX;
-    outStruct.OMEGAY = OMEGAY;
+%     outStruct.OMEGAZ = OMEGAZ;
+%     outStruct.OMEGAX = OMEGAX;
+%     outStruct.OMEGAY = OMEGAY;
     outStruct.JFT = JFT;
     outStruct.JBTs = JBTs;
     outStruct.JBTe = JBTe;
     outStruct.JFW = JFW;
-    outStruct.JENT = JENT;
+%     outStruct.JENT = JENT;
     outStruct.Bx = Bx;
     outStruct.By = By;
     outStruct.Bz = Bz;
@@ -266,4 +266,61 @@ dx = squeeze(dxf(:,:,1)); dy = squeeze(dyf(:,:,1));
 %     outStruct.Rho = rho;
     outStruct.dz = abs(dz);
     outStruct.negQ = squeeze(nansum(nansum(nansum(Q<0))));
+    
+    
+    %% RHS TERMS
+    % U RHS
+URHS = GetVarROMS(pathpv, 0, {'u_rhs', '(1)'}, sliceT);
+% V RHS
+VRHS = GetVarROMS(pathpv, 0, {'v_rhs', '(1)'}, sliceT);
+
+% T RHS
+TRHS = GetVarROMS(pathpv, 0, {'temp_rhs', '(1)'}, sliceT);
+
+% S RHS
+SRHS = GetVarROMS(pathpv, 0, {'salt_rhs', '(1)'}, sliceT);
+
+
+
+JFZ = Bx.*VRHS - By.*URHS;
+JFX = -Bz.*VRHS;
+JFY = Bz.*URHS;
+
+% D   = g*alpha.*(TRHS)   + g*beta.*(SRHS);
+% D = -g./1027.*rho_eos(TRHS, SRHS, 0);
+D = bRHS(TRHS, SRHS, T, S, 1027.4, g);
+
+% magb = sqrt(Bx.^2 + By.^2 + Bz.^2);
+% FACT = (Q.*Bz./(magb.^2)); % See HM90 Eq. 4.1 and 4.2
+JDZ = -(OMEGAZ).*D;
+JDX = -OMEGAX.*D;
+JDY = -OMEGAY.*D;
+
+% XPROJ = Bx./magb; 
+% YPROJ = By./magb;
+% ZPROJ = Bz./magb;
+
+output.JFZ = squeeze(JFZ(:,:,end-1));
+output.JDZ = squeeze(JDZ(:,:,end-1));
+
+output.Jfa = squeeze(nansum(nansum(squeeze(JFZ(:,:,end-1).*mask(:,:,end-1).*dxf(:,:,end-1).*dyf(:,:,end-1)))));
+output.Jda = squeeze(nansum(nansum(squeeze(JDZ(:,:,end-1).*mask(:,:,end-1).*dxf(:,:,end-1).*dyf(:,:,end-1)))));
+
+[nx ny nz] = size(D);
+% X-Fluxes
+xl = 2; xr = nx-1;
+jfxl = squeeze(nansum(nansum(squeeze(JFX(xl,:,:).*mask(xl,:,:).*dyf(xl,:,:).*dz(xl,:,:)))));
+jfxr = squeeze(nansum(nansum(squeeze(JFX(xr,:,:).*mask(xr,:,:).*dyf(xr,:,:).*dz(xr,:,:)))));
+jdxl = squeeze(nansum(nansum(squeeze(JDX(xl,:,:).*mask(xl,:,:).*dyf(xl,:,:).*dz(xl,:,:)))));
+jdxr = squeeze(nansum(nansum(squeeze(JDX(xr,:,:).*mask(xr,:,:).*dyf(xr,:,:).*dz(xr,:,:)))));
+
+% Y-Fluxes
+yf = 2; yb = ny-1;
+jfyf = squeeze(nansum(nansum(squeeze(JFY(:,yf,:).*mask(:,yf,:).*dxf(:,yf,:).*dz(:,yf,:)))));
+jfyb = squeeze(nansum(nansum(squeeze(JFY(:,yb,:).*mask(:,yb,:).*dxf(:,yb,:).*dz(:,yb,:)))));
+jdyf = squeeze(nansum(nansum(squeeze(JDY(:,yf,:).*mask(:,yf,:).*dxf(:,yf,:).*dz(:,yf,:)))));
+jdyb = squeeze(nansum(nansum(squeeze(JDY(:,yb,:).*mask(:,yb,:).*dxf(:,yb,:).*dz(:,yb,:)))));
+
+ output.Jfa = output.Jfa + (jfxr - jfxl)+(jfyb-jfyf);
+ output.Jda = output.Jda + (jdxr - jdxl)+(jdyb-jdyf);
 end
