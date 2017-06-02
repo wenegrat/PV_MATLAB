@@ -56,6 +56,9 @@ filt = filt./sum(sum(filt));
 MTS = filter2(filt, MT);
 %%
 
+
+
+%%
 mask = ones(size(Q));
 % mask(:,84:108,:)=1;
 % mask = 1;
