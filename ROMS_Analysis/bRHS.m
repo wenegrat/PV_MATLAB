@@ -1,4 +1,21 @@
 function D = bRHS(TRHS, SRHS, T, S, rho0, g)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% BASED ON rho_eos from CROCO ROMS tools
+% %  Further Information:  
+%  http://www.brest.ird.fr/Roms_tools/
+%
+% 
+% Modified by J. Wenegrat
+% Calculates a derivative operator applied to the nonlinear buoyancy
+% equation in terms of the same operator applied to T and S.
+%
+% ex. db/dt  can be calculated as bRHS(dTdt, dSdt, T, S, rho0, g)
+% Simple to show that the RHS of the buoyancy equation is equivalent to
+% bRHS(TRHS, SRHS, T, S, rho0, g)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
 % z_r=0;
 % A00=+19092.56;A01=+209.8925;
 % A02=-3.041638;A03=-1.852732e-3;A04=-1.361629e-5;A10=104.4077;
